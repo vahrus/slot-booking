@@ -1,111 +1,79 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta
-      name="description"
-      content="Slotly — учебный сервис онлайн-записи на удобное время."
-    >
-    <title>Slotly — онлайн-запись</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', path='/style.css') }}"
-    >
-  </head>
-  <body>
-    <main class="page-shell">
-      <section class="hero" aria-labelledby="page-title">
-        <header class="site-header">
-          <a class="brand" href="/">Slotly</a>
-          <nav class="navigation" aria-label="Основная навигация">
-            <a class="navigation__link navigation__link--active" href="/">Запись</a>
-            <a class="navigation__link" href="/admin">Администрирование</a>
-          </nav>
-        </header>
+{% extends "base.html" %}
+{% from "_components.html" import state_icon %}
+{% block content %}
+  <section class="public-intro" aria-labelledby="page-title">
+    <p class="public-eyebrow">Просто выберите удобный момент</p>
+    <h1 id="page-title">Онлайн-запись<br><span>на удобное время</span></h1>
+    <p class="public-description">Выберите дату и свободное время. Мы сохраним вашу запись.</p>
+  </section>
 
-        <h1 id="page-title">Онлайн-запись на удобное время</h1>
-        <p class="hero__description">
-          Выберите удобную дату и время для записи.
-        </p>
+  {% if success_message %}
+    <div class="message message--success" role="status">{{ success_message }}</div>
+  {% endif %}
 
-        <div class="schedule-card">
-          <div class="schedule-card__heading">
-            <div>
-              <p class="eyebrow">Расписание</p>
-              <h2>Запись на консультацию</h2>
-            </div>
-          </div>
+  <div class="public-panel schedule-layout">
+    <section class="date-panel" aria-labelledby="date-heading">
+      <p class="step-caption"><span aria-hidden="true">01</span> Выберите дату</p>
+      <h2 id="date-heading">Когда вам удобно?</h2>
+      <p class="helper-text" id="date-help">Посмотрите расписание на выбранный день.</p>
+      <form class="date-form" action="/" method="get">
+        <label for="schedule-date">Дата записи</label>
+        <input
+          id="schedule-date"
+          name="date"
+          type="date"
+          value="{{ selected_date.isoformat() if selected_date else '' }}"
+          required
+          aria-describedby="date-help{% if error_message %} date-error{% endif %}"
+          {% if error_message %}aria-invalid="true"{% endif %}
+        >
+        <button type="submit">Показать расписание</button>
+      </form>
+      {% if error_message %}
+        <div id="date-error" class="message message--error" role="alert">{{ error_message }}</div>
+      {% endif %}
+      <p class="date-note">Затем выберите свободное время и укажите контакт для связи.</p>
+    </section>
 
-          <form class="filter-form" action="/" method="get">
-            <label for="schedule-date">Выберите дату</label>
-            <div class="form-row">
-              <input
-                id="schedule-date"
-                name="date"
-                type="date"
-                value="{{ date_value }}"
-                required
-              >
-              <button type="submit">Показать расписание</button>
-            </div>
-          </form>
-
-          {% if success_message %}
-            <div class="message message--success" role="status">
-              {{ success_message }}
-            </div>
-          {% endif %}
-
-          {% if error_message %}
-            <div class="message message--error" role="alert">
-              {{ error_message }}
-            </div>
-          {% elif selected_date %}
-            <section class="schedule" aria-labelledby="schedule-heading">
-              <h3 id="schedule-heading">
-                {{ formatted_date }}
-              </h3>
-
-              {% if slots %}
-                <ul class="slot-list">
-                  {% for slot in slots %}
-                    <li class="slot-item">
-                      <div class="slot-item__info">
-                        <time datetime="{{ slot.time.strftime('%H:%M') }}">
-                          {{ slot.time.strftime("%H:%M") }}
-                        </time>
-                        <span class="slot-status slot-status--{{ slot.status }}">
-                          {% if slot.status == "free" %}
-                            Свободно
-                          {% elif slot.status == "booked" %}
-                            Занято
-                          {% else %}
-                            {{ slot.status }}
-                          {% endif %}
-                        </span>
-                      </div>
-                      {% if slot.status == "free" %}
-                        <a class="slot-action" href="/booking/{{ slot.id }}">
-                          Записаться
-                        </a>
-                      {% endif %}
-                    </li>
-                  {% endfor %}
-                </ul>
+    <section class="time-panel" aria-labelledby="schedule-heading">
+      <p class="step-caption"><span aria-hidden="true">02</span> Выберите время</p>
+      <h2 id="schedule-heading">
+        {% if selected_date %}
+          Доступное время на<br><time datetime="{{ selected_date.isoformat() }}">{{ formatted_date }}</time>
+        {% else %}
+          Доступное время
+        {% endif %}
+      </h2>
+      {% if selected_date and slots %}
+        <p class="helper-text">Выберите свободное время для записи.</p>
+        <ul class="public-slot-grid">
+          {% for slot in slots %}
+            <li class="public-slot{% if slot.status != 'free' %} public-slot--booked{% endif %}">
+              <time class="public-slot-time" datetime="{{ slot.time.strftime('%H:%M') }}">{{ slot.time.strftime('%H:%M') }}</time>
+              <span class="public-slot-status{% if slot.status == 'free' %} public-slot-status--free{% endif %}">
+                <span class="status-dot" aria-hidden="true"></span>
+                {{ 'Свободно' if slot.status == 'free' else 'Занято' }}
+              </span>
+              {% if slot.status == 'free' %}
+                <a class="slot-action" href="/booking/{{ slot.id }}" aria-label="Записаться на {{ slot.time.strftime('%H:%M') }}">Записаться <span aria-hidden="true">→</span></a>
               {% else %}
-                <div class="empty-state">
-                  На выбранную дату свободных слотов пока нет.
-                </div>
+                <span class="slot-unavailable">Недоступно для записи</span>
               {% endif %}
-            </section>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="public-empty-state">
+          {{ state_icon('neutral') }}
+          {% if selected_date %}
+            <h3>На эту дату пока нет расписания</h3>
+            <p>Выберите другую дату, чтобы посмотреть доступное время.</p>
           {% else %}
-            <div class="empty-state">
-              Выберите дату, чтобы посмотреть доступное время.
-            </div>
+            <h3>Начните с выбора даты</h3>
+            <p>Выберите дату, чтобы посмотреть доступное время.</p>
           {% endif %}
         </div>
-      </section>
-    </main>
-  </body>
-</html>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

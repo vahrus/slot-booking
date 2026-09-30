@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{% block description %}Slotly — онлайн-запись на удобное время.{% endblock %}">
+    <title>{% block title %}Slotly — онлайн-запись{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+  </head>
+  <body class="public-page">
+    <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+    <header class="public-header">
+      <a class="public-brand" href="/" aria-label="Slotly — главная">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="16" rx="4"/>
+            <path d="M8 3v4m8-4v4M4 11h16m-12 5 2 2 5-5"/>
+          </svg>
+        </span>
+        Slotly
+      </a>
+      <nav class="public-navigation" aria-label="Основная навигация">
+        <a href="/" class="public-nav-link">Расписание</a>
+        <a href="/admin" class="public-nav-link public-nav-link--secondary">Для владельца</a>
+      </nav>
+    </header>
+    <main id="main-content" class="public-main {% block main_class %}{% endblock %}" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="public-footer">Slotly <span aria-hidden="true">·</span> Запись в несколько простых шагов</footer>
+  </body>
+</html>

@@ -1,89 +1,61 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta
-      name="description"
-      content="Запись на консультацию в Slotly."
-    >
-    <title>Запись на консультацию — Slotly</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', path='/style.css') }}"
-    >
-  </head>
-  <body>
-    <main class="page-shell">
-      <section class="hero" aria-labelledby="page-title">
-        <header class="site-header">
-          <a class="brand" href="/">Slotly</a>
-          <nav class="navigation" aria-label="Основная навигация">
-            <a class="navigation__link navigation__link--active" href="/">Запись</a>
-            <a class="navigation__link" href="/admin">Администрирование</a>
-          </nav>
-        </header>
-
-        <h1 id="page-title">Запись на консультацию</h1>
-        <p class="hero__description">
-          Проверьте дату и время, затем укажите имя и контакт.
-        </p>
-
-        <div class="schedule-card booking-card">
-          <dl class="booking-details">
-            <div>
-              <dt>Дата</dt>
-              <dd>{{ formatted_date }}</dd>
-            </div>
-            <div>
-              <dt>Время</dt>
-              <dd>{{ slot.time.strftime("%H:%M") }}</dd>
-            </div>
-          </dl>
-
-          {% if occupied %}
-            <div class="message message--error" role="alert">
-              Это время уже занято. Выберите другой слот.
-            </div>
-            <a class="back-link" href="{{ back_url }}">Вернуться к расписанию</a>
-          {% else %}
-            <form class="stacked-form" action="/booking/{{ slot.id }}" method="post">
-              <div class="field">
-                <label for="client-name">Ваше имя</label>
-                <input
-                  id="client-name"
-                  name="client_name"
-                  type="text"
-                  maxlength="100"
-                  value="{{ client_name }}"
-                  autocomplete="name"
-                  required
-                >
-                {% if name_error %}
-                  <p class="field-error" role="alert">{{ name_error }}</p>
-                {% endif %}
-              </div>
-              <div class="field">
-                <label for="client-contact">Телефон или другой контакт</label>
-                <input
-                  id="client-contact"
-                  name="client_contact"
-                  type="text"
-                  maxlength="100"
-                  value="{{ client_contact }}"
-                  autocomplete="tel"
-                  required
-                >
-                {% if contact_error %}
-                  <p class="field-error" role="alert">{{ contact_error }}</p>
-                {% endif %}
-              </div>
-              <button type="submit">Подтвердить запись</button>
-            </form>
-            <a class="back-link" href="{{ back_url }}">Вернуться к расписанию</a>
-          {% endif %}
-        </div>
-      </section>
-    </main>
-  </body>
-</html>
+{% extends "base.html" %}
+{% from "_components.html" import slot_summary, state_icon %}
+{% block title %}Запись на консультацию — Slotly{% endblock %}
+{% block main_class %}public-main--flow{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ back_url }}"><span aria-hidden="true">←</span> Вернуться к расписанию</a>
+  <section class="flow-section" aria-labelledby="page-title">
+    <p class="public-eyebrow">{% if occupied %}Выберите другое время{% else %}Остался один шаг{% endif %}</p>
+    <h1 id="page-title">{% if occupied %}Это время уже занято{% else %}Запись на консультацию{% endif %}</h1>
+    <p class="public-description">{% if occupied %}Вернитесь к расписанию и выберите другое время.{% else %}Проверьте дату и время, затем укажите имя и контакт.{% endif %}</p>
+    <div class="public-panel flow-panel">
+      {{ slot_summary(slot, formatted_date) }}
+      {% if occupied %}
+        {{ state_icon('warning') }}
+        <div class="message message--warning" role="alert">Это время уже занято. Выберите другой слот.</div>
+        <a class="button-link" href="{{ back_url }}">Выбрать другое время</a>
+      {% else %}
+        {% if name_error or contact_error %}
+          <div class="message message--error" role="alert">Проверьте выделенные поля, чтобы подтвердить запись.</div>
+        {% endif %}
+        <form class="public-booking-form" action="/booking/{{ slot.id }}" method="post">
+          <div class="field">
+            <label for="client-name">Ваше имя</label>
+            <input
+              id="client-name"
+              name="client_name"
+              type="text"
+              maxlength="100"
+              value="{{ client_name }}"
+              autocomplete="name"
+              required
+              {% if name_error %}aria-invalid="true" aria-describedby="name-error"{% endif %}
+            >
+            {% if name_error %}
+              <p id="name-error" class="field-error">{{ name_error }}</p>
+            {% endif %}
+          </div>
+          <div class="field">
+            <label for="client-contact">Контакт для связи</label>
+            <input
+              id="client-contact"
+              name="client_contact"
+              type="text"
+              maxlength="100"
+              value="{{ client_contact }}"
+              autocomplete="tel"
+              required
+              aria-describedby="contact-help{% if contact_error %} contact-error{% endif %}"
+              {% if contact_error %}aria-invalid="true"{% endif %}
+            >
+            <p id="contact-help" class="helper-text">Телефон, email или username в мессенджере.</p>
+            {% if contact_error %}
+              <p id="contact-error" class="field-error">{{ contact_error }}</p>
+            {% endif %}
+          </div>
+          <button type="submit">Подтвердить запись <span aria-hidden="true">→</span></button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

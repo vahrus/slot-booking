@@ -1,0 +1,28 @@
+{% macro slot_summary(slot, formatted_date) %}
+<dl class="slot-summary">
+  <div>
+    <dt>Дата</dt>
+    <dd><time datetime="{{ slot.date.isoformat() }}">{{ formatted_date }}</time></dd>
+  </div>
+  <div>
+    <dt>Время</dt>
+    <dd><time datetime="{{ slot.time.strftime('%H:%M') }}">{{ slot.time.strftime('%H:%M') }}</time></dd>
+  </div>
+</dl>
+{% endmacro %}
+
+{% macro state_icon(kind) %}
+<div class="state-icon state-icon--{{ kind }}" aria-hidden="true">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    {% if kind == 'success' %}
+      <path d="m5 12 4 4L19 6"/>
+    {% elif kind == 'warning' %}
+      <path d="M12 7v6m0 4h.01"/><circle cx="12" cy="12" r="9"/>
+    {% elif kind == 'error' %}
+      <path d="m8 8 8 8m0-8-8 8"/><circle cx="12" cy="12" r="9"/>
+    {% else %}
+      <rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 11h16m-12 5h8"/>
+    {% endif %}
+  </svg>
+</div>
+{% endmacro %}
