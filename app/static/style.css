@@ -319,6 +319,39 @@ button:hover {
   background: #4338ca;
 }
 
+.slot-action--danger,
+.button-link--danger,
+.button-danger {
+  color: #fff;
+  background: #dc2626;
+}
+
+.slot-action--danger:hover,
+.button-link--danger:hover,
+.button-danger:hover {
+  background: #b91c1c;
+}
+
+.button-link--secondary {
+  color: #3730a3;
+  background: #eef2ff;
+}
+
+.button-link--secondary:hover {
+  background: #e0e7ff;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.cancel-form {
+  margin: 0;
+}
+
 .booking-card {
   display: grid;
   gap: 22px;
@@ -474,8 +507,14 @@ button:hover {
   .form-row button,
   .stacked-form button,
   .slot-action,
-  .button-link {
+  .button-link,
+  .button-danger {
     width: 100%;
+  }
+
+  .action-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

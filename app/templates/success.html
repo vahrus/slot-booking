@@ -48,7 +48,12 @@
               <dd>{{ booking.client_contact }}</dd>
             </div>
           </dl>
-          <a class="button-link" href="{{ back_url }}">Вернуться к расписанию</a>
+          <div class="action-row">
+            <a class="button-link" href="{{ back_url }}">Вернуться к расписанию</a>
+            <a class="button-link button-link--danger" href="{{ cancel_url }}">
+              Отменить запись
+            </a>
+          </div>
         </div>
       </section>
     </main>

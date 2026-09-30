@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Подтверждение отмены записи в Slotly."
+    >
+    <title>Отмена записи — Slotly</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='/style.css') }}"
+    >
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <header class="site-header">
+          <a class="brand" href="/">Slotly</a>
+          <nav class="navigation" aria-label="Основная навигация">
+            <a
+              class="navigation__link{% if source == 'public' %} navigation__link--active{% endif %}"
+              href="/"
+            >
+              Запись
+            </a>
+            <a
+              class="navigation__link{% if source == 'admin' %} navigation__link--active{% endif %}"
+              href="/admin"
+            >
+              Администрирование
+            </a>
+          </nav>
+        </header>
+
+        <h1 id="page-title">Отменить запись?</h1>
+        <p class="hero__description">
+          После отмены выбранное время снова станет доступно для бронирования.
+        </p>
+
+        <div class="schedule-card booking-card">
+          <dl class="booking-details">
+            <div>
+              <dt>Дата</dt>
+              <dd>{{ formatted_date }}</dd>
+            </div>
+            <div>
+              <dt>Время</dt>
+              <dd>{{ slot.time.strftime("%H:%M") }}</dd>
+            </div>
+            <div>
+              <dt>Имя</dt>
+              <dd>{{ booking.client_name }}</dd>
+            </div>
+          </dl>
+
+          <form class="cancel-form" action="/booking/{{ booking.id }}/cancel" method="post">
+            <input type="hidden" name="source" value="{{ source }}">
+            <div class="action-row">
+              <a class="button-link button-link--secondary" href="{{ back_url }}">
+                Оставить запись
+              </a>
+              <button class="button-danger" type="submit">
+                Отменить запись
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

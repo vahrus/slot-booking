@@ -65,6 +65,7 @@ async def admin_page(
     date_query: Annotated[str | None, Query(alias="date")] = None,
     created: str | None = None,
     created_time: Annotated[str | None, Query(alias="time")] = None,
+    cancelled: str | None = None,
     error: str | None = None,
 ) -> HTMLResponse:
     """Show slot creation controls and the schedule for one date."""
@@ -86,6 +87,10 @@ async def admin_page(
                 f"Слот {parsed_time.strftime('%H:%M')} на "
                 f"{selected_date.strftime('%d.%m.%Y')} создан."
             )
+    elif cancelled == "1" and selected_date is not None:
+        success_message = (
+            "Запись отменена. Время снова доступно для бронирования."
+        )
 
     return templates.TemplateResponse(
         request=request,

@@ -1,8 +1,8 @@
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
-from app.database.models import Booking
+from app.database.models import Booking, Slot
 from app.schemas.booking import BookingCreate
 from app.services.slots import get_slot_by_id
 
@@ -17,6 +17,14 @@ class SlotNotAvailableError(Exception):
 
 class BookingConflictError(Exception):
     """Raised when the database rejects a second booking for the same slot."""
+
+
+class BookingNotFoundError(Exception):
+    """Raised when the requested booking does not exist."""
+
+
+class BookingCancellationError(Exception):
+    """Raised when cancellation could not be committed."""
 
 
 def create_booking(
@@ -57,3 +65,23 @@ def get_booking_by_id(session: Session, booking_id: int) -> Booking | None:
         .where(Booking.id == booking_id)
     )
     return session.scalar(statement)
+
+
+def cancel_booking(session: Session, booking_id: int) -> Slot:
+    """Delete a booking and mark its slot as free in one transaction."""
+    booking = get_booking_by_id(session, booking_id)
+    if booking is None or booking.slot is None:
+        raise BookingNotFoundError
+
+    slot = booking.slot
+    slot.status = "free"
+    session.delete(booking)
+
+    try:
+        session.commit()
+    except SQLAlchemyError as error:
+        session.rollback()
+        raise BookingCancellationError from error
+
+    session.refresh(slot)
+    return slot

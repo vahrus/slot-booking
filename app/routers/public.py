@@ -12,9 +12,12 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.schemas.booking import BookingCreate
 from app.services.bookings import (
+    BookingCancellationError,
     BookingConflictError,
+    BookingNotFoundError,
     SlotNotAvailableError,
     SlotNotFoundError,
+    cancel_booking,
     create_booking,
     get_booking_by_id,
 )
@@ -39,6 +42,7 @@ _RU_MONTHS = (
 
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+_CANCEL_SOURCES = {"public", "admin"}
 
 
 def format_ru_date(value: datetime.date) -> str:
@@ -50,6 +54,22 @@ def _schedule_url(selected_date: datetime.date | None) -> str:
     if selected_date is None:
         return "/"
     return "/?" + urlencode({"date": selected_date.isoformat()})
+
+
+def _cancel_result_url(selected_date: datetime.date, source: str) -> str:
+    if source == "admin":
+        return "/admin?" + urlencode(
+            {"date": selected_date.isoformat(), "cancelled": "1"}
+        )
+    return "/?" + urlencode(
+        {"date": selected_date.isoformat(), "cancelled": "1"}
+    )
+
+
+def _normalize_cancel_source(source: str | None) -> str:
+    if source in _CANCEL_SOURCES:
+        return source
+    return "public"
 
 
 def _user_facing_error(error: dict[str, Any]) -> str:
@@ -85,6 +105,7 @@ async def home(
     request: Request,
     session: Annotated[Session, Depends(get_db)],
     date_query: Annotated[str | None, Query(alias="date")] = None,
+    cancelled: str | None = None,
 ) -> HTMLResponse:
     """Show the public schedule for an optionally selected date."""
     selected_date: datetime.date | None = None
@@ -113,6 +134,11 @@ async def home(
             "date_value": date_query or "",
             "slots": slots,
             "error_message": error_message,
+            "success_message": (
+                "Запись отменена. Время снова доступно для бронирования."
+                if cancelled == "1" and error_message is None
+                else None
+            ),
         },
     )
 
@@ -283,5 +309,88 @@ async def booking_success(
             "slot": booking.slot,
             "formatted_date": format_ru_date(booking.slot.date),
             "back_url": _schedule_url(booking.slot.date),
+            "cancel_url": f"/booking/{booking.id}/cancel",
         },
+    )
+
+
+@router.get("/booking/{booking_id}/cancel", response_class=HTMLResponse)
+async def cancel_booking_confirmation(
+    request: Request,
+    booking_id: int,
+    session: Annotated[Session, Depends(get_db)],
+    source: str | None = None,
+) -> HTMLResponse:
+    """Show a confirmation page before cancelling a booking."""
+    booking = get_booking_by_id(session, booking_id)
+    if booking is None or booking.slot is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="not_found.html",
+            context={
+                "page_title": "Запись не найдена",
+                "message": "Запись для отмены не найдена.",
+                "back_url": "/",
+            },
+            status_code=404,
+        )
+
+    cancel_source = _normalize_cancel_source(source)
+    back_url = (
+        "/admin?" + urlencode({"date": booking.slot.date.isoformat()})
+        if cancel_source == "admin"
+        else _schedule_url(booking.slot.date)
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="cancel.html",
+        context={
+            "booking": booking,
+            "slot": booking.slot,
+            "formatted_date": format_ru_date(booking.slot.date),
+            "source": cancel_source,
+            "back_url": back_url,
+        },
+    )
+
+
+@router.post("/booking/{booking_id}/cancel", response_class=HTMLResponse)
+async def submit_cancel_booking(
+    request: Request,
+    booking_id: int,
+    session: Annotated[Session, Depends(get_db)],
+    source: Annotated[str, Form()] = "public",
+) -> Response:
+    """Cancel a booking through the service layer and redirect after POST."""
+    cancel_source = _normalize_cancel_source(source)
+
+    try:
+        slot = cancel_booking(session, booking_id)
+    except BookingNotFoundError:
+        return templates.TemplateResponse(
+            request=request,
+            name="not_found.html",
+            context={
+                "page_title": "Запись не найдена",
+                "message": "Запись для отмены не найдена или уже отменена.",
+                "back_url": "/",
+            },
+            status_code=404,
+        )
+    except BookingCancellationError:
+        return templates.TemplateResponse(
+            request=request,
+            name="not_found.html",
+            context={
+                "page_title": "Отмена не выполнена",
+                "message": "Не удалось отменить запись. Попробуйте ещё раз.",
+                "back_url": "/",
+            },
+            status_code=409,
+        )
+
+    return RedirectResponse(
+        url=_cancel_result_url(slot.date, cancel_source),
+        status_code=303,
     )
