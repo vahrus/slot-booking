@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
   </head>
-  <body class="public-page">
+  <body class="public-page {% block body_class %}{% endblock %}">
     <a class="skip-link" href="#main-content">Перейти к содержимому</a>
     <header class="public-header">
       <a class="public-brand" href="/" aria-label="Slotly — главная">
@@ -21,13 +21,15 @@
         Slotly
       </a>
       <nav class="public-navigation" aria-label="Основная навигация">
+        {% block navigation %}
         <a href="/" class="public-nav-link">Расписание</a>
         <a href="/admin" class="public-nav-link public-nav-link--secondary">Для владельца</a>
+        {% endblock %}
       </nav>
     </header>
     <main id="main-content" class="public-main {% block main_class %}{% endblock %}" tabindex="-1">
       {% block content %}{% endblock %}
     </main>
-    <footer class="public-footer">Slotly <span aria-hidden="true">·</span> Запись в несколько простых шагов</footer>
+    <footer class="public-footer">{% block footer %}Slotly <span aria-hidden="true">·</span> Запись в несколько простых шагов{% endblock %}</footer>
   </body>
 </html>

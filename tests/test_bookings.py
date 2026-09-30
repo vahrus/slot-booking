@@ -654,7 +654,8 @@ def test_admin_schedule_after_booking(
     assert "10:00" in response.text
     assert "Занято" in response.text
     assert f"/booking/{booking_id}/cancel?source=admin" in response.text
-    assert "Анна Иванова" not in response.text
+    assert "Анна Иванова" in response.text
+    assert "+7 999 123-45-67" in response.text
 
     confirmation = client.get(f"/booking/{booking_id}/cancel?source=admin")
     assert confirmation.status_code == 200

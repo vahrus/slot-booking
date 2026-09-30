@@ -1,156 +1,117 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta
-      name="description"
-      content="Управление расписанием Slotly."
-    >
-    <title>Управление расписанием — Slotly</title>
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/favicon.svg') }}">
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', path='/style.css') }}"
-    >
-  </head>
-  <body>
-    <main class="page-shell page-shell--top">
-      <section class="hero" aria-labelledby="page-title">
-        <header class="site-header">
-          <a class="brand" href="/">Slotly</a>
-          <nav class="navigation" aria-label="Основная навигация">
-            <a class="navigation__link" href="/">Запись</a>
-            <a
-              class="navigation__link navigation__link--active"
-              href="/admin"
-            >
-              Администрирование
-            </a>
-          </nav>
-        </header>
+{% extends "base.html" %}
+{% from "_components.html" import state_icon %}
+{% block title %}Управление расписанием — Slotly{% endblock %}
+{% block description %}Панель владельца расписания Slotly.{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block navigation %}
+  <a href="/admin{% if selected_date %}?date={{ selected_date.isoformat() }}{% endif %}" class="public-nav-link admin-nav-current" aria-current="page">Панель владельца</a>
+  <a href="/{% if selected_date %}?date={{ selected_date.isoformat() }}{% endif %}" class="public-nav-link public-nav-link--secondary">Открыть страницу записи</a>
+{% endblock %}
+{% block footer %}Slotly <span aria-hidden="true">·</span> Панель владельца{% endblock %}
+{% block content %}
+  <section class="admin-intro" aria-labelledby="page-title">
+    <p class="public-eyebrow">Панель владельца</p>
+    <h1 id="page-title">Управление расписанием</h1>
+    <p class="public-description">Добавляйте свободное время, просматривайте записи и управляйте выбранным днём.</p>
+    <p class="admin-demo-note">Демо-интерфейс без авторизации.</p>
+  </section>
 
-        <h1 id="page-title">Управление расписанием</h1>
-        <p class="hero__description">
-          Создавайте свободные временные слоты и проверяйте расписание.
-        </p>
+  {% if success_message %}
+    <div class="message message--success" role="status">{{ success_message }}</div>
+  {% endif %}
+  {% if error_message %}
+    <div id="admin-feedback" class="message message--error" role="alert">{{ error_message }}</div>
+  {% endif %}
 
-        {% if success_message %}
-          <div class="message message--success" role="status">
-            {{ success_message }}
-          </div>
-        {% endif %}
-        {% if error_message %}
-          <div class="message message--error" role="alert">
-            {{ error_message }}
-          </div>
-        {% endif %}
-
-        <div class="admin-grid">
-          <section class="schedule-card" aria-labelledby="create-heading">
-            <div class="schedule-card__heading">
-              <div>
-                <p class="eyebrow">Новый слот</p>
-                <h2 id="create-heading">Создать слот</h2>
-              </div>
-            </div>
-
-            <form class="stacked-form" action="/admin/slots" method="post">
-              <div class="field">
-                <label for="slot-date">Дата</label>
-                <input
-                  id="slot-date"
-                  name="date"
-                  type="date"
-                  value="{{ date_value }}"
-                  required
-                >
-              </div>
-              <div class="field">
-                <label for="slot-time">Время</label>
-                <input
-                  id="slot-time"
-                  name="time"
-                  type="time"
-                  value="{{ time_value }}"
-                  required
-                >
-              </div>
-              <button type="submit">Создать слот</button>
-            </form>
-          </section>
-
-          <section class="schedule-card" aria-labelledby="admin-schedule-heading">
-            <div class="schedule-card__heading">
-              <div>
-                <p class="eyebrow">Обзор</p>
-                <h2 id="admin-schedule-heading">Расписание</h2>
-              </div>
-            </div>
-
-            <form class="filter-form" action="/admin" method="get">
-              <label for="admin-schedule-date">Дата расписания</label>
-              <div class="form-row">
-                <input
-                  id="admin-schedule-date"
-                  name="date"
-                  type="date"
-                  value="{{ date_value }}"
-                  required
-                >
-                <button type="submit">Показать</button>
-              </div>
-            </form>
-
-            {% if selected_date %}
-              <section class="schedule" aria-labelledby="selected-date-heading">
-                <h3 id="selected-date-heading">
-                  Расписание на {{ selected_date.strftime("%d.%m.%Y") }}
-                </h3>
-
-                {% if slots %}
-                  <ul class="slot-list">
-                    {% for slot in slots %}
-                      <li class="slot-item">
-                        <div class="slot-item__info">
-                          <time datetime="{{ slot.time.strftime('%H:%M') }}">
-                            {{ slot.time.strftime("%H:%M") }}
-                          </time>
-                          <span class="slot-status slot-status--{{ slot.status }}">
-                            {% if slot.status == "free" %}
-                              Свободно
-                            {% elif slot.status == "booked" %}
-                              Занято
-                            {% else %}
-                              {{ slot.status }}
-                            {% endif %}
-                          </span>
-                        </div>
-                        {% if slot.status == "booked" and slot.booking %}
-                          <a
-                            class="slot-action slot-action--danger"
-                            href="/booking/{{ slot.booking.id }}/cancel?source=admin"
-                          >
-                            Отменить запись
-                          </a>
-                        {% endif %}
-                      </li>
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <div class="empty-state">
-                    На выбранную дату слоты ещё не созданы.
-                  </div>
-                {% endif %}
-              </section>
-            {% else %}
-              <div class="empty-state">
-                Выберите дату, чтобы посмотреть расписание.
-              </div>
-            {% endif %}
-          </section>
+  <div class="admin-workspace">
+    <section class="public-panel admin-create-panel" aria-labelledby="create-heading">
+      <p class="step-caption"><span aria-hidden="true">+</span> Новое время</p>
+      <h2 id="create-heading">Создать слот</h2>
+      <p id="create-help" class="helper-text">Добавьте время, на которое можно записаться.</p>
+      <form class="public-booking-form admin-create-form" action="/admin/slots" method="post">
+        <div class="field">
+          <label for="slot-date">Дата</label>
+          <input
+            id="slot-date" name="date" type="date" value="{{ date_value }}" required
+            aria-describedby="create-help{% if date_error %} slot-date-error{% endif %}"
+            {% if date_error %}aria-invalid="true"{% endif %}
+          >
+          {% if date_error %}<p id="slot-date-error" class="field-error">{{ date_error }}</p>{% endif %}
         </div>
-      </section>
-    </main>
-  </body>
-</html>
+        <div class="field">
+          <label for="slot-time">Время</label>
+          <input
+            id="slot-time" name="time" type="time" value="{{ time_value }}" required
+            {% if time_error %}aria-invalid="true" aria-describedby="slot-time-error"{% endif %}
+          >
+          {% if time_error %}<p id="slot-time-error" class="field-error">{{ time_error }}</p>{% endif %}
+        </div>
+        <button type="submit">Добавить время <span aria-hidden="true">+</span></button>
+      </form>
+      <p class="admin-create-note">Новое время появится в расписании и станет доступно на странице записи.</p>
+    </section>
+
+    <section class="public-panel admin-schedule-panel" aria-labelledby="admin-schedule-heading">
+      <p class="step-caption"><span aria-hidden="true">↗</span> Обзор дня</p>
+      <h2 id="admin-schedule-heading">Расписание и записи</h2>
+      <form class="admin-date-form" action="/admin" method="get">
+        <label for="admin-schedule-date">Дата расписания</label>
+        <div class="form-row">
+          <input
+            id="admin-schedule-date" name="date" type="date" value="{{ date_value }}" required
+            {% if filter_error %}aria-invalid="true" aria-describedby="admin-feedback"{% endif %}
+          >
+          <button type="submit">Показать</button>
+        </div>
+      </form>
+
+      {% if selected_date %}
+        <section class="admin-day" aria-labelledby="selected-date-heading">
+          <h3 id="selected-date-heading">Расписание на <time datetime="{{ selected_date.isoformat() }}">{{ formatted_date }}</time></h3>
+          <dl class="admin-summary" aria-label="Сводка выбранного дня">
+            <div><dt>Всего</dt><dd>{{ summary.total }}</dd></div>
+            <div><dt>Свободно</dt><dd>{{ summary.free }}</dd></div>
+            <div><dt>Занято</dt><dd>{{ summary.booked }}</dd></div>
+          </dl>
+          {% if slots %}
+            <ul class="admin-slot-list">
+              {% for slot in slots %}
+                <li class="admin-slot{% if slot.status == 'booked' %} admin-slot--booked{% endif %}">
+                  <div class="admin-slot-heading">
+                    <time class="public-slot-time" datetime="{{ slot.time.strftime('%H:%M') }}">{{ slot.time.strftime('%H:%M') }}</time>
+                    <span class="public-slot-status{% if slot.status == 'free' %} public-slot-status--free{% endif %}">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      {{ 'Свободно' if slot.status == 'free' else 'Занято' }}
+                    </span>
+                  </div>
+                  {% if slot.status == 'booked' and slot.booking %}
+                    <div class="admin-booking-row">
+                      <dl class="client-details admin-client-details">
+                        <div><dt>Имя</dt><dd>{{ slot.booking.client_name }}</dd></div>
+                        <div><dt>Контакт</dt><dd>{{ slot.booking.client_contact }}</dd></div>
+                      </dl>
+                      <a class="button-link button-link--danger" href="/booking/{{ slot.booking.id }}/cancel?source=admin" aria-label="Отменить запись на {{ slot.time.strftime('%H:%M') }}">Отменить запись</a>
+                    </div>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="public-empty-state admin-empty-state">
+              {{ state_icon('neutral') }}
+              <h4>На эту дату расписание ещё не создано</h4>
+              <p>Добавьте первое доступное время с помощью формы создания.</p>
+              <a class="back-link" href="#slot-date">Добавить первое время <span aria-hidden="true">→</span></a>
+            </div>
+          {% endif %}
+        </section>
+      {% else %}
+        <div class="public-empty-state admin-empty-state">
+          {{ state_icon('neutral') }}
+          <h3>Выберите день для просмотра</h3>
+          <p>Выберите дату, чтобы посмотреть расписание и записи клиентов.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

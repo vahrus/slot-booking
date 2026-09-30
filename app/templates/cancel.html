@@ -2,10 +2,18 @@
 {% from "_components.html" import slot_summary, state_icon %}
 {% block title %}Отмена записи — Slotly{% endblock %}
 {% block main_class %}public-main--flow{% endblock %}
+{% block navigation %}
+  {% if source == 'admin' %}
+    <a href="{{ back_url }}" class="public-nav-link">Панель владельца</a>
+    <a href="/?date={{ slot.date.isoformat() }}" class="public-nav-link public-nav-link--secondary">Страница записи</a>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
 {% block content %}
   <section class="flow-section result-section" aria-labelledby="page-title">
     {{ state_icon('error') }}
-    <p class="public-eyebrow">Подтверждение отмены</p>
+    <p class="public-eyebrow">{% if source == 'admin' %}Панель владельца · {% endif %}Подтверждение отмены</p>
     <h1 id="page-title">Отменить запись?</h1>
     <p class="public-description">После отмены выбранное время снова станет доступно для бронирования.</p>
     <div class="public-panel flow-panel">

@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
+from app.routers.public import format_ru_date
 from app.schemas.slot import SlotCreate
 from app.services.slots import (
     SlotAlreadyExistsError,
@@ -42,6 +43,9 @@ def _admin_context(
     time_value: str = "",
     success_message: str | None = None,
     error_message: str | None = None,
+    date_error: str | None = None,
+    time_error: str | None = None,
+    filter_error: bool = False,
 ) -> dict[str, Any]:
     slots = (
         get_slots_by_date(session, selected_date)
@@ -50,11 +54,20 @@ def _admin_context(
     )
     return {
         "selected_date": selected_date,
+        "formatted_date": format_ru_date(selected_date) if selected_date else "",
         "date_value": date_value,
         "time_value": time_value,
         "slots": slots,
         "success_message": success_message,
         "error_message": error_message,
+        "date_error": date_error,
+        "time_error": time_error,
+        "filter_error": filter_error,
+        "summary": {
+            "total": len(slots),
+            "free": sum(slot.status == "free" for slot in slots),
+            "booked": sum(slot.status == "booked" for slot in slots),
+        },
     }
 
 
@@ -101,6 +114,7 @@ async def admin_page(
             date_value=date_query or "",
             success_message=success_message,
             error_message=error_message,
+            filter_error=bool(date_query and selected_date is None),
         ),
     )
 
@@ -117,7 +131,7 @@ async def add_slot(
         slot_data = SlotCreate.model_validate(
             {"date": date_value, "time": time_value}
         )
-    except ValidationError:
+    except ValidationError as exc:
         selected_date = _parse_date(date_value)
         return templates.TemplateResponse(
             request=request,
@@ -128,6 +142,16 @@ async def add_slot(
                 date_value=date_value,
                 time_value=time_value,
                 error_message="Укажите корректные дату и время.",
+                date_error=(
+                    "Укажите корректную дату."
+                    if any(error["loc"] == ("date",) for error in exc.errors())
+                    else None
+                ),
+                time_error=(
+                    "Укажите корректное время."
+                    if any(error["loc"] == ("time",) for error in exc.errors())
+                    else None
+                ),
             ),
             status_code=400,
         )

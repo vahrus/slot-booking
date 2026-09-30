@@ -1,7 +1,7 @@
 # Slotly — Техническая спецификация v1.0
 
 Версия спецификации: 1.0
-Состояние реализации: Iteration 5.0 — Cancellation & Conflicts
+Состояние реализации: Iteration 7.0 — Admin UI
 
 Slotly v1.0 реализует ядро учебного MVP для онлайн-бронирования временных
 слотов. Проект не является полноценной production-системой управления записью:
@@ -721,18 +721,32 @@ PRG используется для успешных mutating operations:
 
 ## Admin UI
 
-`GET /admin` — demo admin interface without authentication.
+`GET /admin` — demo admin interface without authentication, визуально согласованный
+с public UI. На странице явно указан демо-статус без авторизации.
 
-Доступные действия:
+Доступные действия и информация:
 
-- создать `Slot` через HTML form;
-- выбрать дату для просмотра расписания;
+- создать `Slot` через HTML form с structured date/time inputs;
+- выбрать дату для просмотра расписания через `/admin?date=YYYY-MM-DD`;
+- увидеть выбранный день в читаемом русском формате и время ascending;
 - увидеть статусы `Свободно` / `Занято`;
-- для booked slot перейти к cancellation confirmation через
+- для booked slot увидеть `client_name` и `client_contact` с HTML escaping;
+- увидеть сводку `Всего` / `Свободно` / `Занято`, вычисленную из уже загруженных
+  слотов выбранного дня, без дополнительных запросов или хранения counts в БД;
+- получить понятные сообщения создания, duplicate и validation ошибок;
+- для booked slot перейти к shared cancellation confirmation через
   `/booking/{booking_id}/cancel?source=admin`;
-- после admin cancellation вернуться в `/admin?date=...&cancelled=1`.
+- оставить запись или подтвердить отмену через POST;
+- после admin cancellation вернуться в `/admin?date=...&cancelled=1`;
+- перейти к public schedule с сохранением выбранной даты.
 
-Admin UI не является защищённой административной панелью.
+Free slots не показывают пустые client fields. Технические IDs не отображаются
+как пользовательская информация. Public schedule по-прежнему скрывает данные
+клиентов. Основные действия работают без JavaScript, интерфейс адаптирован для
+мобильных экранов и управления с клавиатуры.
+
+Admin UI не является защищённой административной панелью. HTTP routes,
+validation schemas и transaction semantics сохранены.
 
 ## Security and Privacy
 
@@ -742,6 +756,7 @@ Admin UI не является защищённой административн
 - autoescape включён для `.html` templates;
 - в templates не используется `|safe` для client data;
 - public schedule не показывает `client_name` и `client_contact`;
+- demo admin schedule показывает имя и контакт только для booked slots;
 - success page загружает booking по `booking_id`, а не получает client data
   через query parameters;
 - cancellation не выполняется GET-запросом;
@@ -760,7 +775,7 @@ Admin UI не является защищённой административн
 Фактический regression result на момент синхронизации:
 
 ```text
-48 passed
+85 passed
 ```
 
 Категории тестов:
@@ -772,7 +787,9 @@ Admin UI не является защищённой административн
 - booking route/integration tests;
 - cancellation tests;
 - conflict tests;
-- rollback/invariant tests.
+- rollback/invariant tests;
+- public accessibility, validation/preservation и HTML escaping tests;
+- admin UI, summary, privacy boundary и safe cancellation return tests.
 
 Tests используют временные SQLite databases через `tmp_path`,
 `create_sqlite_engine()` и отдельные `sessionmaker` instances. Production
@@ -807,19 +824,11 @@ database `data/booking.db` не используется тестами.
 | Iteration 3.0 — Slots | Done |
 | Iteration 4.0 — Booking | Done |
 | Iteration 5.0 — Cancellation & Conflicts | Done |
-| Iteration 6.0 — Client UI | Planned |
-| Iteration 7.0 — Admin UI | Planned |
+| Iteration 6.0 — Client UI | Done |
+| Iteration 7.0 — Admin UI | Done |
 | Iteration 8.0 — QA & Documentation | Planned |
 
 ## Future Iterations
-
-### Iteration 6.0
-
-Client UI polish.
-
-### Iteration 7.0
-
-Admin UI polish.
 
 ### Iteration 8.0
 
