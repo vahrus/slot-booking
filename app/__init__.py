@@ -1,0 +1,1 @@
+"""Slotly application package."""

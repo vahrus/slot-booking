@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Slotly — учебный сервис онлайн-записи на удобное время."
+    >
+    <title>Slotly — онлайн-запись</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='/style.css') }}"
+    >
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="brand">Slotly</p>
+        <h1 id="page-title">Онлайн-запись на удобное время</h1>
+        <p class="hero__description">
+          Выберите удобную дату и время для записи.
+        </p>
+
+        <div class="schedule-card">
+          <div class="schedule-card__heading">
+            <div>
+              <p class="eyebrow">Будущее расписание</p>
+              <h2>Запись на консультацию</h2>
+            </div>
+            <span class="status-badge">В разработке</span>
+          </div>
+
+          <div class="schedule-placeholder">
+            <span class="schedule-placeholder__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/>
+              </svg>
+            </span>
+            <p>Расписание появится на следующем этапе разработки.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
