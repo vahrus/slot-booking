@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Управление расписанием Slotly."
+    >
+    <title>Управление расписанием — Slotly</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='/style.css') }}"
+    >
+  </head>
+  <body>
+    <main class="page-shell page-shell--top">
+      <section class="hero" aria-labelledby="page-title">
+        <header class="site-header">
+          <a class="brand" href="/">Slotly</a>
+          <nav class="navigation" aria-label="Основная навигация">
+            <a class="navigation__link" href="/">Запись</a>
+            <a
+              class="navigation__link navigation__link--active"
+              href="/admin"
+            >
+              Администрирование
+            </a>
+          </nav>
+        </header>
+
+        <h1 id="page-title">Управление расписанием</h1>
+        <p class="hero__description">
+          Создавайте свободные временные слоты и проверяйте расписание.
+        </p>
+
+        {% if success_message %}
+          <div class="message message--success" role="status">
+            {{ success_message }}
+          </div>
+        {% endif %}
+        {% if error_message %}
+          <div class="message message--error" role="alert">
+            {{ error_message }}
+          </div>
+        {% endif %}
+
+        <div class="admin-grid">
+          <section class="schedule-card" aria-labelledby="create-heading">
+            <div class="schedule-card__heading">
+              <div>
+                <p class="eyebrow">Новый слот</p>
+                <h2 id="create-heading">Создать слот</h2>
+              </div>
+            </div>
+
+            <form class="stacked-form" action="/admin/slots" method="post">
+              <div class="field">
+                <label for="slot-date">Дата</label>
+                <input
+                  id="slot-date"
+                  name="date"
+                  type="date"
+                  value="{{ date_value }}"
+                  required
+                >
+              </div>
+              <div class="field">
+                <label for="slot-time">Время</label>
+                <input
+                  id="slot-time"
+                  name="time"
+                  type="time"
+                  value="{{ time_value }}"
+                  required
+                >
+              </div>
+              <button type="submit">Создать слот</button>
+            </form>
+          </section>
+
+          <section class="schedule-card" aria-labelledby="admin-schedule-heading">
+            <div class="schedule-card__heading">
+              <div>
+                <p class="eyebrow">Обзор</p>
+                <h2 id="admin-schedule-heading">Расписание</h2>
+              </div>
+            </div>
+
+            <form class="filter-form" action="/admin" method="get">
+              <label for="admin-schedule-date">Дата расписания</label>
+              <div class="form-row">
+                <input
+                  id="admin-schedule-date"
+                  name="date"
+                  type="date"
+                  value="{{ date_value }}"
+                  required
+                >
+                <button type="submit">Показать</button>
+              </div>
+            </form>
+
+            {% if selected_date %}
+              <section class="schedule" aria-labelledby="selected-date-heading">
+                <h3 id="selected-date-heading">
+                  Расписание на {{ selected_date.strftime("%d.%m.%Y") }}
+                </h3>
+
+                {% if slots %}
+                  <ul class="slot-list">
+                    {% for slot in slots %}
+                      <li class="slot-item">
+                        <time datetime="{{ slot.time.strftime('%H:%M') }}">
+                          {{ slot.time.strftime("%H:%M") }}
+                        </time>
+                        <span class="slot-status slot-status--{{ slot.status }}">
+                          {% if slot.status == "free" %}
+                            Свободно
+                          {% elif slot.status == "booked" %}
+                            Занято
+                          {% else %}
+                            {{ slot.status }}
+                          {% endif %}
+                        </span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div class="empty-state">
+                    На выбранную дату слоты ещё не созданы.
+                  </div>
+                {% endif %}
+              </section>
+            {% else %}
+              <div class="empty-state">
+                Выберите дату, чтобы посмотреть расписание.
+              </div>
+            {% endif %}
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

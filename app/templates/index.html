@@ -16,7 +16,14 @@
   <body>
     <main class="page-shell">
       <section class="hero" aria-labelledby="page-title">
-        <p class="brand">Slotly</p>
+        <header class="site-header">
+          <a class="brand" href="/">Slotly</a>
+          <nav class="navigation" aria-label="Основная навигация">
+            <a class="navigation__link navigation__link--active" href="/">Запись</a>
+            <a class="navigation__link" href="/admin">Администрирование</a>
+          </nav>
+        </header>
+
         <h1 id="page-title">Онлайн-запись на удобное время</h1>
         <p class="hero__description">
           Выберите удобную дату и время для записи.
@@ -25,20 +32,65 @@
         <div class="schedule-card">
           <div class="schedule-card__heading">
             <div>
-              <p class="eyebrow">Будущее расписание</p>
+              <p class="eyebrow">Расписание</p>
               <h2>Запись на консультацию</h2>
             </div>
-            <span class="status-badge">В разработке</span>
           </div>
 
-          <div class="schedule-placeholder">
-            <span class="schedule-placeholder__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="img">
-                <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/>
-              </svg>
-            </span>
-            <p>Расписание появится на следующем этапе разработки.</p>
-          </div>
+          <form class="filter-form" action="/" method="get">
+            <label for="schedule-date">Выберите дату</label>
+            <div class="form-row">
+              <input
+                id="schedule-date"
+                name="date"
+                type="date"
+                value="{{ date_value }}"
+                required
+              >
+              <button type="submit">Показать расписание</button>
+            </div>
+          </form>
+
+          {% if error_message %}
+            <div class="message message--error" role="alert">
+              {{ error_message }}
+            </div>
+          {% elif selected_date %}
+            <section class="schedule" aria-labelledby="schedule-heading">
+              <h3 id="schedule-heading">
+                {{ formatted_date }}
+              </h3>
+
+              {% if slots %}
+                <ul class="slot-list">
+                  {% for slot in slots %}
+                    <li class="slot-item">
+                      <time datetime="{{ slot.time.strftime('%H:%M') }}">
+                        {{ slot.time.strftime("%H:%M") }}
+                      </time>
+                      <span class="slot-status slot-status--{{ slot.status }}">
+                        {% if slot.status == "free" %}
+                          Свободно
+                        {% elif slot.status == "booked" %}
+                          Занято
+                        {% else %}
+                          {{ slot.status }}
+                        {% endif %}
+                      </span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="empty-state">
+                  На выбранную дату свободных слотов пока нет.
+                </div>
+              {% endif %}
+            </section>
+          {% else %}
+            <div class="empty-state">
+              Выберите дату, чтобы посмотреть доступное время.
+            </div>
+          {% endif %}
         </div>
       </section>
     </main>
