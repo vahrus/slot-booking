@@ -275,17 +275,101 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
   padding: 14px 16px;
   border: 1px solid #e5e9f1;
   border-radius: 12px;
   background: #fafbfc;
 }
 
+.slot-item__info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .slot-item time {
   color: #172033;
   font-size: 1.05rem;
   font-weight: 800;
+}
+
+.slot-action,
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 11px;
+  color: #fff;
+  background: #4f46e5;
+  font-size: 0.92rem;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.slot-action:hover,
+.button-link:hover {
+  background: #4338ca;
+}
+
+.booking-card {
+  display: grid;
+  gap: 22px;
+}
+
+.booking-details {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.booking-details div {
+  min-width: 0;
+}
+
+.booking-details dt {
+  margin: 0 0 4px;
+  color: #778196;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.booking-details dd {
+  margin: 0;
+  color: #111827;
+  font-size: 1.15rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.field-error {
+  margin: 8px 0 0;
+  color: #991b1b;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.back-link {
+  color: #4338ca;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.button-link {
+  justify-self: start;
 }
 
 .slot-status {
@@ -388,7 +472,9 @@ button:hover {
   }
 
   .form-row button,
-  .stacked-form button {
+  .stacked-form button,
+  .slot-action,
+  .button-link {
     width: 100%;
   }
 }

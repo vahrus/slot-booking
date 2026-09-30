@@ -31,6 +31,11 @@ def create_slot(session: Session, slot_data: SlotCreate) -> Slot:
     return slot
 
 
+def get_slot_by_id(session: Session, slot_id: int) -> Slot | None:
+    """Return one slot by identifier, or None if it does not exist."""
+    return session.get(Slot, slot_id)
+
+
 def get_slots_by_date(
     session: Session,
     selected_date: datetime.date,
@@ -42,3 +47,4 @@ def get_slots_by_date(
         .order_by(Slot.time.asc())
     )
     return list(session.scalars(statement).all())
+

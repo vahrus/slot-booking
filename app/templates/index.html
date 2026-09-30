@@ -65,18 +65,25 @@
                 <ul class="slot-list">
                   {% for slot in slots %}
                     <li class="slot-item">
-                      <time datetime="{{ slot.time.strftime('%H:%M') }}">
-                        {{ slot.time.strftime("%H:%M") }}
-                      </time>
-                      <span class="slot-status slot-status--{{ slot.status }}">
-                        {% if slot.status == "free" %}
-                          Свободно
-                        {% elif slot.status == "booked" %}
-                          Занято
-                        {% else %}
-                          {{ slot.status }}
-                        {% endif %}
-                      </span>
+                      <div class="slot-item__info">
+                        <time datetime="{{ slot.time.strftime('%H:%M') }}">
+                          {{ slot.time.strftime("%H:%M") }}
+                        </time>
+                        <span class="slot-status slot-status--{{ slot.status }}">
+                          {% if slot.status == "free" %}
+                            Свободно
+                          {% elif slot.status == "booked" %}
+                            Занято
+                          {% else %}
+                            {{ slot.status }}
+                          {% endif %}
+                        </span>
+                      </div>
+                      {% if slot.status == "free" %}
+                        <a class="slot-action" href="/booking/{{ slot.id }}">
+                          Записаться
+                        </a>
+                      {% endif %}
                     </li>
                   {% endfor %}
                 </ul>

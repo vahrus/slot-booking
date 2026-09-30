@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Запись в Slotly подтверждена."
+    >
+    <title>Запись подтверждена — Slotly</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='/style.css') }}"
+    >
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <header class="site-header">
+          <a class="brand" href="/">Slotly</a>
+          <nav class="navigation" aria-label="Основная навигация">
+            <a class="navigation__link navigation__link--active" href="/">Запись</a>
+            <a class="navigation__link" href="/admin">Администрирование</a>
+          </nav>
+        </header>
+
+        <h1 id="page-title">Запись подтверждена</h1>
+        <p class="hero__description">
+          Мы сохранили вашу запись. Приходите в выбранное время.
+        </p>
+
+        <div class="schedule-card booking-card booking-card--success">
+          <dl class="booking-details">
+            <div>
+              <dt>Дата</dt>
+              <dd>{{ formatted_date }}</dd>
+            </div>
+            <div>
+              <dt>Время</dt>
+              <dd>{{ slot.time.strftime("%H:%M") }}</dd>
+            </div>
+            <div>
+              <dt>Имя</dt>
+              <dd>{{ booking.client_name }}</dd>
+            </div>
+            <div>
+              <dt>Контакт</dt>
+              <dd>{{ booking.client_contact }}</dd>
+            </div>
+          </dl>
+          <a class="button-link" href="{{ back_url }}">Вернуться к расписанию</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Запись на консультацию в Slotly."
+    >
+    <title>Запись на консультацию — Slotly</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='/style.css') }}"
+    >
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <header class="site-header">
+          <a class="brand" href="/">Slotly</a>
+          <nav class="navigation" aria-label="Основная навигация">
+            <a class="navigation__link navigation__link--active" href="/">Запись</a>
+            <a class="navigation__link" href="/admin">Администрирование</a>
+          </nav>
+        </header>
+
+        <h1 id="page-title">Запись на консультацию</h1>
+        <p class="hero__description">
+          Проверьте дату и время, затем укажите имя и контакт.
+        </p>
+
+        <div class="schedule-card booking-card">
+          <dl class="booking-details">
+            <div>
+              <dt>Дата</dt>
+              <dd>{{ formatted_date }}</dd>
+            </div>
+            <div>
+              <dt>Время</dt>
+              <dd>{{ slot.time.strftime("%H:%M") }}</dd>
+            </div>
+          </dl>
+
+          {% if occupied %}
+            <div class="message message--error" role="alert">
+              Это время уже занято. Выберите другой слот.
+            </div>
+            <a class="back-link" href="{{ back_url }}">Вернуться к расписанию</a>
+          {% else %}
+            <form class="stacked-form" action="/booking/{{ slot.id }}" method="post">
+              <div class="field">
+                <label for="client-name">Ваше имя</label>
+                <input
+                  id="client-name"
+                  name="client_name"
+                  type="text"
+                  maxlength="100"
+                  value="{{ client_name }}"
+                  autocomplete="name"
+                  required
+                >
+                {% if name_error %}
+                  <p class="field-error" role="alert">{{ name_error }}</p>
+                {% endif %}
+              </div>
+              <div class="field">
+                <label for="client-contact">Телефон или другой контакт</label>
+                <input
+                  id="client-contact"
+                  name="client_contact"
+                  type="text"
+                  maxlength="100"
+                  value="{{ client_contact }}"
+                  autocomplete="tel"
+                  required
+                >
+                {% if contact_error %}
+                  <p class="field-error" role="alert">{{ contact_error }}</p>
+                {% endif %}
+              </div>
+              <button type="submit">Подтвердить запись</button>
+            </form>
+            <a class="back-link" href="{{ back_url }}">Вернуться к расписанию</a>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
