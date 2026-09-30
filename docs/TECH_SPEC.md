@@ -1,14 +1,15 @@
 # Slotly — Техническая спецификация v1.0
 
 Версия спецификации: 1.0
-Состояние реализации: Iteration 7.0 — Admin UI
+Состояние реализации: Slotly v1.0 — Ready for submission
 
 Slotly v1.0 реализует ядро учебного MVP для онлайн-бронирования временных
 слотов. Проект не является полноценной production-системой управления записью:
 он фиксирует базовые доменные правила, persistence, HTML UI и критичные
 инварианты бронирования.
 
-Инструкции запуска и демонстрации см. в `README.md`.
+Инструкции запуска и демонстрации см. в [README](../README.md).
+Проверки перед сдачей — в [Submission Checklist](SUBMISSION_CHECKLIST.md).
 
 ## Назначение продукта
 
@@ -97,7 +98,7 @@ Slot снова становится free
 - Jinja2;
 - SQLAlchemy 2.x;
 - SQLite;
-- Pydantic;
+- Pydantic 2.x;
 - HTML5;
 - CSS3;
 - pytest.
@@ -194,8 +195,11 @@ app/
     admin.py
     public.py
   static/
+    favicon.svg
     style.css
   templates/
+    base.html
+    _components.html
     admin.html
     booking.html
     cancel.html
@@ -204,14 +208,26 @@ app/
     success.html
 data/
   .gitkeep
-  booking.db
+  booking.db  # автоматически создаётся при startup; не хранится в Git
 docs/
   TECH_SPEC.md
+  SUBMISSION_CHECKLIST.md
+  screenshots/
+    01-public-schedule.png
+    02-booking-form.png
+    03-booking-success.png
+    04-admin-schedule.png
+    05-admin-booking.png
+    06-cancellation.png
 tests/
   __init__.py
+  test_admin_ui.py
   test_bookings.py
   test_database.py
+  test_public_ui.py
   test_slots.py
+.env.example
+.gitignore
 README.md
 requirements.txt
 ```
@@ -242,7 +258,9 @@ data/booking.db
 
 - директория `data/` создаётся автоматически;
 - таблицы создаются через `Base.metadata.create_all(bind=engine)`;
-- `data/booking.db` исключён из Git;
+- `data/booking.db` и служебные SQLite journal/WAL/SHM файлы исключены из Git;
+- для первого запуска не нужны ручные миграции или `.env`;
+- `create_all()` создаёт отсутствующие таблицы, но не мигрирует существующую схему;
 - `SessionLocal` использует `autoflush=False` и `expire_on_commit=False`;
 - SQLite engine создаётся с `check_same_thread=False`;
 - foreign key enforcement включается на каждое подключение через
@@ -663,7 +681,7 @@ rollback
 
 Фактически реализованные responses:
 
-- `GET /` с некорректной датой: `200` with inline error message;
+- `GET /` и `GET /admin` с некорректной датой: `200` with inline error message;
 - `GET /booking/{slot_id}` для missing slot: `404`;
 - `GET /booking/{slot_id}` для booked slot: `409`;
 - `POST /booking/{slot_id}` с invalid client form: `400`, если слот свободен;
@@ -768,11 +786,13 @@ validation schemas и transaction semantics сохранены.
 - `/admin` не защищён authentication;
 - booking success/cancel pages доступны по знанию numeric `booking_id`;
 - нет CSRF protection;
-- нет user/session ownership model.
+- нет user/session ownership model;
+- дата и время слота не содержат timezone; будущая дата не обязательна;
+- нет системы миграций существующей схемы и распределённой инфраструктуры.
 
 ## Testing
 
-Фактический regression result на момент синхронизации:
+Проверка v1.0 (2026-10-01), Python 3.11.9:
 
 ```text
 85 passed
@@ -793,7 +813,30 @@ validation schemas и transaction semantics сохранены.
 
 Tests используют временные SQLite databases через `tmp_path`,
 `create_sqlite_engine()` и отдельные `sessionmaker` instances. Production
-database `data/booking.db` не используется тестами.
+database `data/booking.db` не используется тестами. Сравнение строк и схемы
+рабочей БД до и после тестов подтвердило изоляцию.
+
+Фактически выполнены также:
+
+- установка `requirements.txt` в отдельное чистое virtual environment;
+- `pip check`, import приложения и полный pytest в чистом окружении;
+- запуск команды README с `--reload` в отдельной копии без `booking.db`: таблицы
+  созданы автоматически, HTML, static files, `/health` и `/docs` доступны;
+- браузерная проверка public/admin, booking, success, cancel и error states
+  на 1440, 1024, 768 и 390 px, включая длинные имя и контакт;
+- проверка keyboard focus, labels, native/server validation и работы основных
+  действий без JavaScript;
+- smoke через реальный сервер: создание трёх слотов, duplicate, invalid booking,
+  booking/conflict, безопасный GET confirmation, POST cancellation, rebooking
+  и возврат в admin после отмены;
+- проверка сохранённых `client_name`, `client_contact`, `created_at` и статусов
+  непосредственно в SQLite на этапах smoke;
+- сравнение исходных строк и схемы SQLite после очистки только demo/smoke данных.
+
+В чистом окружении pytest вывел одно `StarletteDeprecationWarning` об использовании
+HTTPX в TestClient. Все 85 тестов прошли; предупреждение зависимости не изменяет
+результат проверок. Скриншоты показывают вымышленные данные, которые после
+проверки удалены из рабочей базы.
 
 ## Critical Tested Scenarios
 
@@ -826,10 +869,11 @@ database `data/booking.db` не используется тестами.
 | Iteration 5.0 — Cancellation & Conflicts | Done |
 | Iteration 6.0 — Client UI | Done |
 | Iteration 7.0 — Admin UI | Done |
-| Iteration 8.0 — QA & Documentation | Planned |
+| Iteration 8.0 — QA, Documentation & Submission Readiness | Done |
 
-## Future Iterations
+## Submission Readiness
 
-### Iteration 8.0
-
-Final QA, documentation, screenshots, submission readiness.
+Slotly v1.0: **Ready for submission**. Финальная QA и документация завершены;
+подтверждённые сценарии и ограничения перечислены в
+[Submission Checklist](SUBMISSION_CHECKLIST.md). Статус относится к сдаче
+учебного MVP. Ограничения authentication, ownership и CSRF остаются явными.
