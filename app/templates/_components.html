@@ -1,3 +1,14 @@
+{% macro booking_progress(active) %}
+<ol class="booking-progress" aria-label="Этапы записи">
+  {% for label in ['Дата', 'Время', 'Контакты', 'Готово'] %}
+    <li class="booking-step{% if loop.index == active %} booking-step--active{% elif loop.index < active %} booking-step--complete{% endif %}"{% if loop.index == active %} aria-current="step"{% endif %}>
+      <span class="booking-step-number" aria-hidden="true">{% if loop.index < active %}<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8 3 3 7-7"/></svg>{% else %}{{ loop.index }}{% endif %}</span>
+      <span class="booking-step-label">{{ label }}</span>
+    </li>
+  {% endfor %}
+</ol>
+{% endmacro %}
+
 {% macro slot_summary(slot, formatted_date) %}
 <dl class="slot-summary">
   <div>

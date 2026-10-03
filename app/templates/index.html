@@ -1,10 +1,12 @@
 {% extends "base.html" %}
-{% from "_components.html" import state_icon %}
+{% from "_components.html" import state_icon, booking_progress %}
+{% block body_class %}schedule-page{% endblock %}
 {% block content %}
+  {% set calendar = booking_calendar(selected_date, request.query_params.get('month')) %}
   <section class="public-intro" aria-labelledby="page-title">
-    <p class="public-eyebrow">Просто выберите удобный момент</p>
-    <h1 id="page-title">Онлайн-запись<br><span>на удобное время</span></h1>
-    <p class="public-description">Выберите дату и свободное время. Мы сохраним вашу запись.</p>
+    <p class="public-eyebrow">Онлайн-запись в Slotly</p>
+    <h1 id="page-title">Найдите время<br>для <span>своих планов</span></h1>
+    <p class="public-description">Выберите день и время. Остальное — просто.</p>
   </section>
 
   {% if success_message %}
@@ -12,68 +14,117 @@
   {% endif %}
 
   <div class="public-panel schedule-layout">
-    <section class="date-panel" aria-labelledby="date-heading">
-      <p class="step-caption"><span aria-hidden="true">01</span> Выберите дату</p>
-      <h2 id="date-heading">Когда вам удобно?</h2>
-      <p class="helper-text" id="date-help">Посмотрите расписание на выбранный день.</p>
-      <form class="date-form" action="/" method="get">
-        <label for="schedule-date">Дата записи</label>
-        <input
-          id="schedule-date"
-          name="date"
-          type="date"
-          value="{{ selected_date.isoformat() if selected_date else '' }}"
-          required
-          aria-describedby="date-help{% if error_message %} date-error{% endif %}"
-          {% if error_message %}aria-invalid="true"{% endif %}
-        >
-        <button type="submit">Показать расписание</button>
-      </form>
-      {% if error_message %}
-        <div id="date-error" class="message message--error" role="alert">{{ error_message }}</div>
-      {% endif %}
-      <p class="date-note">Затем выберите свободное время и укажите контакт для связи.</p>
-    </section>
-
-    <section class="time-panel" aria-labelledby="schedule-heading">
-      <p class="step-caption"><span aria-hidden="true">02</span> Выберите время</p>
-      <h2 id="schedule-heading">
-        {% if selected_date %}
-          Доступное время на<br><time datetime="{{ selected_date.isoformat() }}">{{ formatted_date }}</time>
-        {% else %}
-          Доступное время
-        {% endif %}
-      </h2>
-      {% if selected_date and slots %}
-        <p class="helper-text">Выберите свободное время для записи.</p>
-        <ul class="public-slot-grid">
-          {% for slot in slots %}
-            <li class="public-slot{% if slot.status != 'free' %} public-slot--booked{% endif %}">
-              <time class="public-slot-time" datetime="{{ slot.time.strftime('%H:%M') }}">{{ slot.time.strftime('%H:%M') }}</time>
-              <span class="public-slot-status{% if slot.status == 'free' %} public-slot-status--free{% endif %}">
-                <span class="status-dot" aria-hidden="true"></span>
-                {{ 'Свободно' if slot.status == 'free' else 'Занято' }}
-              </span>
-              {% if slot.status == 'free' %}
-                <a class="slot-action" href="/booking/{{ slot.id }}" aria-label="Записаться на {{ slot.time.strftime('%H:%M') }}">Записаться <span aria-hidden="true">→</span></a>
-              {% else %}
-                <span class="slot-unavailable">Недоступно для записи</span>
-              {% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <div class="public-empty-state">
-          {{ state_icon('neutral') }}
-          {% if selected_date %}
-            <h3>На эту дату пока нет расписания</h3>
-            <p>Выберите другую дату, чтобы посмотреть доступное время.</p>
-          {% else %}
-            <h3>Начните с выбора даты</h3>
-            <p>Выберите дату, чтобы посмотреть доступное время.</p>
-          {% endif %}
+    {{ booking_progress(2 if selected_date else 1) }}
+    <div class="schedule-content">
+      <section class="date-panel" aria-labelledby="date-heading">
+        <div class="date-panel-heading">
+          <h2 id="date-heading">Выберите дату</h2>
+          <p class="helper-text" id="date-help">Когда вам будет удобно встретиться?</p>
         </div>
-      {% endif %}
-    </section>
+
+        <div class="calendar">
+          <nav class="calendar-navigation" aria-label="Месяцы календаря">
+            <h3 id="calendar-month">{{ calendar.label }}</h3>
+            <div class="calendar-arrows">
+              {% if calendar.previous_url %}
+                <a href="{{ calendar.previous_url }}" class="calendar-arrow" aria-label="Предыдущий месяц">
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m12 5-5 5 5 5"/></svg>
+                </a>
+              {% else %}
+                <span class="calendar-arrow calendar-arrow--disabled" aria-disabled="true" aria-label="Предыдущий месяц недоступен">‹</span>
+              {% endif %}
+              {% if calendar.next_url %}
+                <a href="{{ calendar.next_url }}" class="calendar-arrow" aria-label="Следующий месяц">
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
+                </a>
+              {% else %}
+                <span class="calendar-arrow calendar-arrow--disabled" aria-disabled="true" aria-label="Следующий месяц недоступен">›</span>
+              {% endif %}
+            </div>
+          </nav>
+          <table class="calendar-grid" aria-labelledby="calendar-month">
+            <thead>
+              <tr>{% for short, full in [('Пн', 'Понедельник'), ('Вт', 'Вторник'), ('Ср', 'Среда'), ('Чт', 'Четверг'), ('Пт', 'Пятница'), ('Сб', 'Суббота'), ('Вс', 'Воскресенье')] %}<th scope="col" abbr="{{ full }}">{{ short }}</th>{% endfor %}</tr>
+            </thead>
+            <tbody>
+              {% for week in calendar.weeks %}
+                <tr>
+                  {% for day in week %}
+                    <td>
+                      {% if day %}
+                        <a href="/?date={{ day.isoformat() }}"
+                           class="calendar-day{% if day.month != calendar.month %} calendar-day--outside{% endif %}{% if day == calendar.today %} calendar-day--today{% endif %}{% if day == selected_date %} calendar-day--selected{% endif %}"
+                           aria-label="{{ day.strftime('%d.%m.%Y') }}{% if day == calendar.today %}, сегодня{% endif %}{% if day == selected_date %}, выбрано{% endif %}"
+                           {% if day == selected_date %}aria-current="date"{% endif %}>
+                          {{ day.day }}{% if day == calendar.today %}<span class="calendar-today-dot" aria-hidden="true"></span>{% endif %}
+                        </a>
+                      {% else %}
+                        <span class="calendar-day calendar-day--disabled" aria-hidden="true">—</span>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="calendar-footer">
+            <span class="calendar-today-key"><span aria-hidden="true"></span>Сегодня</span>
+            <a class="calendar-today-link" href="{{ calendar.today_url }}">К сегодняшнему дню <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+
+        <details class="calendar-fallback"{% if error_message %} open{% endif %}>
+          <summary>Ввести дату вручную</summary>
+          <form class="date-form" action="/" method="get">
+            <label for="schedule-date">Дата записи</label>
+            <input id="schedule-date" name="date" type="date"
+                   value="{{ selected_date.isoformat() if selected_date else '' }}" required
+                   aria-describedby="date-help{% if error_message %} date-error{% endif %}"
+                   {% if error_message %}aria-invalid="true"{% endif %}>
+            <button type="submit">Показать расписание</button>
+          </form>
+        </details>
+        {% if error_message %}
+          <div id="date-error" class="message message--error" role="alert">{{ error_message }}</div>
+        {% endif %}
+      </section>
+
+      <section class="time-panel" aria-labelledby="schedule-heading">
+        <div class="time-panel-heading">
+          <p class="step-caption">Выберите время</p>
+          <h2 id="schedule-heading">{% if selected_date %}<time datetime="{{ selected_date.isoformat() }}">{{ formatted_date }}</time>{% else %}Ваш следующий свободный час{% endif %}</h2>
+          <p class="helper-text">{% if selected_date and slots %}Нажмите на удобное время, чтобы записаться.{% else %}Всё начинается с подходящего дня.{% endif %}</p>
+        </div>
+        {% if selected_date and slots %}
+          <ul class="public-slot-grid">
+            {% for slot in slots %}
+              <li class="public-slot{% if slot.status != 'free' %} public-slot--booked{% endif %}">
+                <time class="public-slot-time" datetime="{{ slot.time.strftime('%H:%M') }}">{{ slot.time.strftime('%H:%M') }}</time>
+                <span class="public-slot-status{% if slot.status == 'free' %} public-slot-status--free{% endif %}">{{ 'Свободно' if slot.status == 'free' else 'Занято' }}</span>
+                {% if slot.status == 'free' %}
+                  <a class="slot-action" href="/booking/{{ slot.id }}" aria-label="Записаться на {{ slot.time.strftime('%H:%M') }}"><span class="visually-hidden">Записаться</span><span aria-hidden="true">↗</span></a>
+                {% else %}
+                  <span class="slot-unavailable visually-hidden">Недоступно для записи</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+          {% set free_count = slots | selectattr('status', 'equalto', 'free') | list | length %}
+          <p class="availability-note"><span class="status-dot" aria-hidden="true"></span><strong>{{ free_count }}</strong> доступно для записи <span class="availability-note-detail">из {{ slots | length }}</span></p>
+        {% else %}
+          <div class="public-empty-state">
+            {{ state_icon('neutral') }}
+            {% if selected_date %}
+              <h3>На эту дату пока нет расписания</h3>
+              <p>Выберите другую дату, чтобы посмотреть доступное время.</p>
+            {% else %}
+              <h3>Начните с выбора даты</h3>
+              <p>Выберите дату, чтобы посмотреть доступное время.</p>
+            {% endif %}
+          </div>
+        {% endif %}
+        <p class="widget-note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m4 10 4 4 8-8"/></svg>После выбора времени — только имя и контакт</p>
+      </section>
+    </div>
   </div>
 {% endblock %}

@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% from "_components.html" import slot_summary, state_icon %}
+{% from "_components.html" import slot_summary, state_icon, booking_progress %}
 {% block title %}Запись подтверждена — Slotly{% endblock %}
 {% block main_class %}public-main--flow{% endblock %}
+{% block body_class %}success-page{% endblock %}
 {% block content %}
   <section class="flow-section result-section" aria-labelledby="page-title">
     {{ state_icon('success') }}
@@ -9,6 +10,7 @@
     <h1 id="page-title">Запись подтверждена</h1>
     <p class="public-description">Мы сохранили вашу запись. Приходите в выбранное время.</p>
     <div class="public-panel flow-panel">
+      {{ booking_progress(4) }}
       {{ slot_summary(slot, formatted_date) }}
       <dl class="client-details">
         <div><dt>Имя</dt><dd>{{ booking.client_name }}</dd></div>

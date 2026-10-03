@@ -22,7 +22,7 @@
       </a>
       <nav class="public-navigation" aria-label="Основная навигация">
         {% block navigation %}
-        <a href="/" class="public-nav-link">Расписание</a>
+        <a href="/" class="public-nav-link"{% if request.url.path == '/' %} aria-current="page"{% endif %}>Расписание</a>
         <a href="/admin" class="public-nav-link public-nav-link--secondary">Для владельца</a>
         {% endblock %}
       </nav>

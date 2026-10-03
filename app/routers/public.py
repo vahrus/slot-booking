@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.calendar_view import booking_calendar
 from app.database.database import get_db
 from app.schemas.booking import BookingCreate
 from app.services.bookings import (
@@ -42,6 +43,7 @@ _RU_MONTHS = (
 
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+templates.env.globals["booking_calendar"] = booking_calendar
 _CANCEL_SOURCES = {"public", "admin"}
 
 

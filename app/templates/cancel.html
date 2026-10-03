@@ -2,6 +2,7 @@
 {% from "_components.html" import slot_summary, state_icon %}
 {% block title %}Отмена записи — Slotly{% endblock %}
 {% block main_class %}public-main--flow{% endblock %}
+{% block body_class %}cancel-page{% endblock %}
 {% block navigation %}
   {% if source == 'admin' %}
     <a href="{{ back_url }}" class="public-nav-link">Панель владельца</a>
