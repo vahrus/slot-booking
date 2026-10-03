@@ -5,9 +5,21 @@
 {% block content %}
   {% set calendar = booking_calendar(selected_date, request.query_params.get('month')) %}
   <section class="public-intro" aria-labelledby="page-title">
-    <p class="public-eyebrow">Онлайн-запись в Slotly</p>
-    <h1 id="page-title">Найдите время<br>для <span>своих планов</span></h1>
-    <p class="public-description">Выберите день и время. Остальное — просто.</p>
+    <div class="intro-copy">
+      <p class="public-eyebrow">Онлайн-запись в Slotly</p>
+      <h1 id="page-title">Найдите время<br>для <span>своих планов</span></h1>
+      <p class="public-description">Выберите день и время. Остальное — просто.</p>
+    </div>
+    <div class="intro-mark" aria-hidden="true">
+      <svg viewBox="0 0 88 88" fill="none">
+        <circle cx="44" cy="44" r="33" stroke="currentColor" stroke-width="1" opacity="0.28"/>
+        <circle cx="44" cy="44" r="22" stroke="currentColor" stroke-width="1" opacity="0.16"/>
+        <path d="M44 14.5v5.5M73.5 44h-5.5M44 73.5v-5.5M14.5 44h5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.45"/>
+        <path d="M44 11a33 33 0 0 1 28.6 16.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M44 44 56.5 31" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="44" cy="44" r="2.6" fill="currentColor"/>
+      </svg>
+    </div>
   </section>
 
   {% if success_message %}
@@ -45,7 +57,7 @@
         <div class="time-panel-heading">
           <p class="step-caption">Выберите время</p>
           <h2 id="schedule-heading">{% if selected_date %}<time datetime="{{ selected_date.isoformat() }}">{{ formatted_date }}</time>{% else %}Ваш следующий свободный час{% endif %}</h2>
-          <p class="helper-text">{% if selected_date and slots %}Нажмите на удобное время, чтобы записаться.{% else %}Всё начинается с подходящего дня.{% endif %}</p>
+          <p class="helper-text">{% if available_count %}Нажмите на удобное время, чтобы записаться.{% elif slots %}Свободного времени на эту дату не осталось.{% else %}Всё начинается с подходящего дня.{% endif %}</p>
         </div>
         {% if selected_date and slots %}
           <ul class="public-slot-grid">
@@ -55,14 +67,14 @@
                 <time class="public-slot-time" datetime="{{ slot.time.strftime('%H:%M') }}">{{ slot.time.strftime('%H:%M') }}</time>
                 <span class="public-slot-status{% if state == 'available' %} public-slot-status--free{% endif %}">{{ 'Свободно' if state == 'available' else 'Время прошло' if state == 'past' else 'Занято' }}</span>
                 {% if state == 'available' %}
-                  <a class="slot-action" href="/booking/{{ slot.id }}" aria-label="Записаться на {{ slot.time.strftime('%H:%M') }}"><span class="visually-hidden">Записаться</span><span aria-hidden="true">↗</span></a>
+                  <a class="slot-action" href="/booking/{{ slot.id }}" aria-label="Записаться на {{ slot.time.strftime('%H:%M') }}"><span class="visually-hidden">Записаться</span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg></a>
                 {% else %}
                   <span class="slot-unavailable visually-hidden">{{ 'Недоступно: время прошло' if state == 'past' else 'Недоступно для записи' }}</span>
                 {% endif %}
               </li>
             {% endfor %}
           </ul>
-          <p class="availability-note"><span class="status-dot" aria-hidden="true"></span><strong>{{ available_count }}</strong> доступно для записи <span class="availability-note-detail">из {{ slots | length }}</span></p>
+          <p class="availability-note{% if available_count == 0 %} availability-note--none{% endif %}"><span class="status-dot" aria-hidden="true"></span><strong>{{ available_count }}</strong> доступно для записи <span class="availability-note-detail">из {{ slots | length }}</span></p>
         {% else %}
           <div class="public-empty-state">
             {{ state_icon('neutral') }}
