@@ -21,12 +21,14 @@ def test_admin_identity_navigation_labels_and_no_date(client: TestClient) -> Non
     assert document.find("html")["lang"] == "ru"
     assert document.find("a", href="#main-content")
     assert document.find("main", id="main-content")
-    assert document.find("a", href="/admin")["aria-current"] == "page"
-    assert document.find("a", href="/")
+    assert document.find("a", href="/admin?date=2026-10-09")["aria-current"] == "page"
+    assert document.find("a", href="/?date=2026-10-09")
     assert "Панель владельца" in document.text
     assert "Открыть страницу записи" in document.text
     assert "Демо-интерфейс без авторизации." in document.text
-    assert "Выберите дату, чтобы посмотреть расписание и записи клиентов." in document.text
+    assert "Расписание на 9 октября 2026" in document.text
+    assert document.find("input", id="slot-date")["value"] == "2026-10-09"
+    assert document.find("a", **{"aria-current": "date"})["href"] == "/admin?date=2026-10-09"
     for field_id, field_type in [
         ("slot-date", "date"),
         ("slot-time", "time"),

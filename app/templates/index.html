@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_components.html" import state_icon, booking_progress %}
+{% from "_calendar.html" import inline_calendar %}
 {% block body_class %}schedule-page{% endblock %}
 {% block content %}
   {% set calendar = booking_calendar(selected_date, request.query_params.get('month')) %}
@@ -22,56 +23,7 @@
           <p class="helper-text" id="date-help">Когда вам будет удобно встретиться?</p>
         </div>
 
-        <div class="calendar">
-          <nav class="calendar-navigation" aria-label="Месяцы календаря">
-            <h3 id="calendar-month">{{ calendar.label }}</h3>
-            <div class="calendar-arrows">
-              {% if calendar.previous_url %}
-                <a href="{{ calendar.previous_url }}" class="calendar-arrow" aria-label="Предыдущий месяц">
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m12 5-5 5 5 5"/></svg>
-                </a>
-              {% else %}
-                <span class="calendar-arrow calendar-arrow--disabled" aria-disabled="true" aria-label="Предыдущий месяц недоступен">‹</span>
-              {% endif %}
-              {% if calendar.next_url %}
-                <a href="{{ calendar.next_url }}" class="calendar-arrow" aria-label="Следующий месяц">
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
-                </a>
-              {% else %}
-                <span class="calendar-arrow calendar-arrow--disabled" aria-disabled="true" aria-label="Следующий месяц недоступен">›</span>
-              {% endif %}
-            </div>
-          </nav>
-          <table class="calendar-grid" aria-labelledby="calendar-month">
-            <thead>
-              <tr>{% for short, full in [('Пн', 'Понедельник'), ('Вт', 'Вторник'), ('Ср', 'Среда'), ('Чт', 'Четверг'), ('Пт', 'Пятница'), ('Сб', 'Суббота'), ('Вс', 'Воскресенье')] %}<th scope="col" abbr="{{ full }}">{{ short }}</th>{% endfor %}</tr>
-            </thead>
-            <tbody>
-              {% for week in calendar.weeks %}
-                <tr>
-                  {% for day in week %}
-                    <td>
-                      {% if day %}
-                        <a href="/?date={{ day.isoformat() }}"
-                           class="calendar-day{% if day.month != calendar.month %} calendar-day--outside{% endif %}{% if day == calendar.today %} calendar-day--today{% endif %}{% if day == selected_date %} calendar-day--selected{% endif %}"
-                           aria-label="{{ day.strftime('%d.%m.%Y') }}{% if day == calendar.today %}, сегодня{% endif %}{% if day == selected_date %}, выбрано{% endif %}"
-                           {% if day == selected_date %}aria-current="date"{% endif %}>
-                          {{ day.day }}{% if day == calendar.today %}<span class="calendar-today-dot" aria-hidden="true"></span>{% endif %}
-                        </a>
-                      {% else %}
-                        <span class="calendar-day calendar-day--disabled" aria-hidden="true">—</span>
-                      {% endif %}
-                    </td>
-                  {% endfor %}
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          <div class="calendar-footer">
-            <span class="calendar-today-key"><span aria-hidden="true"></span>Сегодня</span>
-            <a class="calendar-today-link" href="{{ calendar.today_url }}">К сегодняшнему дню <span aria-hidden="true">↗</span></a>
-          </div>
-        </div>
+        {{ inline_calendar(calendar, selected_date) }}
 
         <details class="calendar-fallback"{% if error_message %} open{% endif %}>
           <summary>Ввести дату вручную</summary>

@@ -18,6 +18,7 @@ def booking_calendar(
     requested_month: str | None = None,
     *,
     today: date | None = None,
+    base_url: str = "/",
 ) -> dict[str, object]:
     """Build Monday-first weeks and GET links, preserving the selected date."""
     today = today if today is not None else local_today()
@@ -35,7 +36,7 @@ def booking_calendar(
         parameters = {"month": f"{year:04d}-{month:02d}"}
         if selected:
             parameters["date"] = selected.isoformat()
-        return "/?" + urlencode(parameters)
+        return base_url + "?" + urlencode(parameters)
 
     previous = (
         (first.year, first.month - 1) if first.month > 1
@@ -58,7 +59,8 @@ def booking_calendar(
         "label": f"{_MONTH_NAMES[first.month - 1]} {first.year}",
         "weeks": [days[index:index + 7] for index in range(0, len(days), 7)],
         "today": today,
-        "today_url": "/?" + urlencode({"date": today.isoformat()}),
+        "base_url": base_url,
+        "today_url": base_url + "?" + urlencode({"date": today.isoformat()}),
         "previous_url": month_url(*previous) if previous[0] >= 1 else None,
         "next_url": month_url(*following) if following[0] <= 9999 else None,
     }

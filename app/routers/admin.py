@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.calendar_view import booking_calendar
 from app.database.database import get_db
 from app.routers.public import format_ru_date
 from app.schemas.slot import SlotCreate
@@ -18,6 +19,7 @@ from app.services.slots import (
     get_slots_by_date,
 )
 from app.static_assets import stylesheet_version
+from app.timezone import local_today
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
@@ -25,6 +27,7 @@ TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["stylesheet_version"] = stylesheet_version
+templates.env.globals["booking_calendar"] = booking_calendar
 
 
 def _parse_date(value: str | None) -> datetime.date | None:
@@ -84,7 +87,7 @@ async def admin_page(
     error: str | None = None,
 ) -> HTMLResponse:
     """Show slot creation controls and the schedule for one date."""
-    selected_date = _parse_date(date_query)
+    selected_date = _parse_date(date_query) if date_query else local_today()
     error_message: str | None = None
     success_message: str | None = None
 
@@ -113,7 +116,7 @@ async def admin_page(
         context=_admin_context(
             session,
             selected_date,
-            date_value=date_query or "",
+            date_value=date_query or selected_date.isoformat(),
             success_message=success_message,
             error_message=error_message,
             filter_error=bool(date_query and selected_date is None),

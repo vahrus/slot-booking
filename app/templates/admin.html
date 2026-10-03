@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_components.html" import state_icon %}
+{% from "_calendar.html" import inline_calendar %}
 {% block title %}Управление расписанием — Slotly{% endblock %}
 {% block description %}Панель владельца расписания Slotly.{% endblock %}
 {% block body_class %}admin-page{% endblock %}
@@ -9,6 +10,7 @@
 {% endblock %}
 {% block footer %}Slotly <span aria-hidden="true">·</span> Панель владельца{% endblock %}
 {% block content %}
+  {% set calendar = booking_calendar(selected_date, request.query_params.get("month"), base_url="/admin") %}
   <section class="admin-intro" aria-labelledby="page-title">
     <p class="public-eyebrow">Панель владельца</p>
     <h1 id="page-title">Управление расписанием</h1>
@@ -24,46 +26,56 @@
   {% endif %}
 
   <div class="admin-workspace">
-    <section class="public-panel admin-create-panel" aria-labelledby="create-heading">
-      <p class="step-caption"><span aria-hidden="true">+</span> Новое время</p>
-      <h2 id="create-heading">Создать слот</h2>
-      <p id="create-help" class="helper-text">Добавьте время, на которое можно записаться.</p>
-      <form class="public-booking-form admin-create-form" action="/admin/slots" method="post">
-        <div class="field">
-          <label for="slot-date">Дата</label>
-          <input
-            id="slot-date" name="date" type="date" value="{{ date_value }}" required
-            aria-describedby="create-help{% if date_error %} slot-date-error{% endif %}"
-            {% if date_error %}aria-invalid="true"{% endif %}
-          >
-          {% if date_error %}<p id="slot-date-error" class="field-error">{{ date_error }}</p>{% endif %}
-        </div>
-        <div class="field">
-          <label for="slot-time">Время</label>
-          <input
-            id="slot-time" name="time" type="time" value="{{ time_value }}" required
-            {% if time_error %}aria-invalid="true" aria-describedby="slot-time-error"{% endif %}
-          >
-          {% if time_error %}<p id="slot-time-error" class="field-error">{{ time_error }}</p>{% endif %}
-        </div>
-        <button type="submit">Добавить время <span aria-hidden="true">+</span></button>
-      </form>
-      <p class="admin-create-note">Новое время появится в расписании и станет доступно на странице записи.</p>
+    <section class="public-panel admin-create-panel" aria-labelledby="admin-calendar-heading">
+      <div class="admin-calendar-heading">
+        <h2 id="admin-calendar-heading">Выберите день</h2>
+        <p class="helper-text">Расписание и новые слоты на выбранную дату.</p>
+      </div>
+      {{ inline_calendar(calendar, selected_date) }}
+      <details class="calendar-fallback"{% if filter_error %} open{% endif %}>
+        <summary>Ввести дату вручную</summary>
+        <form class="admin-date-form" action="/admin" method="get">
+          <label for="admin-schedule-date">Дата расписания</label>
+          <div class="form-row">
+            <input
+              id="admin-schedule-date" name="date" type="date" value="{{ date_value }}" required
+              {% if filter_error %}aria-invalid="true" aria-describedby="admin-feedback"{% endif %}
+            >
+            <button type="submit">Показать</button>
+          </div>
+        </form>
+      </details>
+      <section class="admin-create-section" aria-labelledby="create-heading">
+        <p class="step-caption"><span aria-hidden="true">+</span> Новое время</p>
+        <h2 id="create-heading">Создать слот</h2>
+        <p id="create-help" class="helper-text">Добавьте время, на которое можно записаться.</p>
+        <form class="public-booking-form admin-create-form" action="/admin/slots" method="post">
+          <div class="field">
+            <label for="slot-date">Дата</label>
+            <input
+              id="slot-date" name="date" type="date" value="{{ date_value }}" required
+              aria-describedby="create-help{% if date_error %} slot-date-error{% endif %}"
+              {% if date_error %}aria-invalid="true"{% endif %}
+            >
+            {% if date_error %}<p id="slot-date-error" class="field-error">{{ date_error }}</p>{% endif %}
+          </div>
+          <div class="field">
+            <label for="slot-time">Время</label>
+            <input
+              id="slot-time" name="time" type="time" value="{{ time_value }}" required
+              {% if time_error %}aria-invalid="true" aria-describedby="slot-time-error"{% endif %}
+            >
+            {% if time_error %}<p id="slot-time-error" class="field-error">{{ time_error }}</p>{% endif %}
+          </div>
+          <button type="submit">Добавить время <span aria-hidden="true">+</span></button>
+        </form>
+        <p class="admin-create-note">Дата из календаря уже заполнена. Укажите время для нового слота.</p>
+      </section>
     </section>
 
     <section class="public-panel admin-schedule-panel" aria-labelledby="admin-schedule-heading">
       <p class="step-caption"><span aria-hidden="true">↗</span> Обзор дня</p>
       <h2 id="admin-schedule-heading">Расписание и записи</h2>
-      <form class="admin-date-form" action="/admin" method="get">
-        <label for="admin-schedule-date">Дата расписания</label>
-        <div class="form-row">
-          <input
-            id="admin-schedule-date" name="date" type="date" value="{{ date_value }}" required
-            {% if filter_error %}aria-invalid="true" aria-describedby="admin-feedback"{% endif %}
-          >
-          <button type="submit">Показать</button>
-        </div>
-      </form>
 
       {% if selected_date %}
         <section class="admin-day" aria-labelledby="selected-date-heading">

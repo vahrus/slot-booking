@@ -940,13 +940,22 @@ button:active, .button-link:active {
 }
 .admin-workspace {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 380px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
 .admin-create-panel, .admin-schedule-panel {
   padding: 24px;
   border-radius: 20px;
+}
+.admin-create-section {
+  margin-top: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.calendar-fallback .admin-date-form {
+  margin-top: 8px;
+  padding-bottom: 12px;
 }
 .admin-create-form, .admin-date-form {
   margin-top: 20px;
