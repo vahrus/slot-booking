@@ -49,12 +49,14 @@ def assert_descriptions_exist(document: Document) -> None:
 
 
 @pytest.mark.parametrize("query", ["", "?date="])
-def test_no_date_explains_next_step(client: TestClient, query: str) -> None:
+def test_no_date_selects_today_and_explains_empty_schedule(client: TestClient, query: str) -> None:
     response = client.get("/" + query)
     document = Document(response.text)
     assert response.status_code == 200
-    assert "Выберите дату, чтобы посмотреть доступное время." in document.text
+    assert "На эту дату пока нет расписания" in document.text
+    assert "9 октября 2026" in document.text
     assert document.find("input", name="date")["type"] == "date"
+    assert document.find("input", name="date")["value"] == "2026-10-09"
     assert document.find("label", **{"for": "schedule-date"})
     assert not any(tag == "a" and (attrs.get("href") or "").startswith("/booking/") for tag, attrs in document.elements)
 

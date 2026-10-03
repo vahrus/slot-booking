@@ -17,12 +17,14 @@ from app.services.slots import (
     create_slot,
     get_slots_by_date,
 )
+from app.static_assets import stylesheet_version
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
 
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+templates.env.globals["stylesheet_version"] = stylesheet_version
 
 
 def _parse_date(value: str | None) -> datetime.date | None:
@@ -102,7 +104,7 @@ async def admin_page(
             )
     elif cancelled == "1" and selected_date is not None:
         success_message = (
-            "Запись отменена. Время снова доступно для бронирования."
+            "Запись отменена. Проверьте доступное время в расписании."
         )
 
     return templates.TemplateResponse(

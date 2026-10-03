@@ -516,7 +516,7 @@ def test_post_cancel_booking_redirects_and_frees_slot(
 
     final_response = client.get(response.headers["location"])
     assert final_response.status_code == 200
-    assert "Запись отменена. Время снова доступно для бронирования." in final_response.text
+    assert "Запись отменена. Проверьте доступное время в расписании." in final_response.text
 
     with session_factory() as session:
         assert session.get(Booking, booking_id) is None
@@ -673,7 +673,7 @@ def test_admin_schedule_after_booking(
 
     final_response = client.get(cancelled.headers["location"])
     assert final_response.status_code == 200
-    assert "Запись отменена. Время снова доступно для бронирования." in final_response.text
+    assert "Запись отменена. Проверьте доступное время в расписании." in final_response.text
     assert "Свободно" in final_response.text
 
     with session_factory() as session:

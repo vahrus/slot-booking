@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database.database import init_db
 from app.routers import admin, public
+from app.timezone import get_app_timezone
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -15,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent
 @asynccontextmanager
 async def lifespan(_application: FastAPI) -> AsyncIterator[None]:
     """Prepare application resources for the server lifetime."""
+    get_app_timezone()
     init_db()
     yield
 

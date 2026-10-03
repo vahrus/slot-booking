@@ -4,6 +4,8 @@ import calendar
 from datetime import date
 from urllib.parse import urlencode
 
+from app.timezone import local_today
+
 
 _MONTH_NAMES = (
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -18,7 +20,7 @@ def booking_calendar(
     today: date | None = None,
 ) -> dict[str, object]:
     """Build Monday-first weeks and GET links, preserving the selected date."""
-    today = today or date.today()
+    today = today if today is not None else local_today()
     first = (selected or today).replace(day=1)
     if requested_month:
         try:

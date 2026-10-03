@@ -6,14 +6,14 @@
   <a class="back-link" href="{{ back_url }}"><span aria-hidden="true">←</span> Вернуться к расписанию</a>
   <section class="flow-section" aria-labelledby="page-title">
     <p class="public-eyebrow">{% if occupied %}Выберите другое время{% else %}Остался один шаг{% endif %}</p>
-    <h1 id="page-title">{% if occupied %}Это время уже занято{% else %}Запись на консультацию{% endif %}</h1>
+    <h1 id="page-title">{% if past %}Время прошло{% elif occupied %}Это время уже занято{% else %}Запись на консультацию{% endif %}</h1>
     <p class="public-description">{% if occupied %}Вернитесь к расписанию и выберите другое время.{% else %}Проверьте дату и время, затем укажите имя и контакт.{% endif %}</p>
     <div class="public-panel flow-panel">
       {{ booking_progress(2 if occupied else 3) }}
       {{ slot_summary(slot, formatted_date) }}
       {% if occupied %}
         {{ state_icon('warning') }}
-        <div class="message message--warning" role="alert">Это время уже занято. Выберите другой слот.</div>
+        <div class="message message--warning" role="alert">{% if past %}Время прошло. Запись на этот слот недоступна.{% else %}Это время уже занято. Выберите другой слот.{% endif %}</div>
         <a class="button-link" href="{{ back_url }}">Выбрать другое время</a>
       {% else %}
         {% if name_error or contact_error %}

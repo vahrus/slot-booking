@@ -559,12 +559,12 @@ button:active, .button-link:active {
   background: var(--surface);
   transition: border-color 150ms, box-shadow 150ms, background-color 150ms;
 }
-.public-slot:not(.public-slot--booked):hover {
+.public-slot:not(.public-slot--booked):not(.public-slot--past):hover {
   border-color: var(--accent);
   background: #f7f6ff;
   box-shadow: 0 3px 10px rgb(79 70 229 / 8%);
 }
-.public-slot:not(.public-slot--booked):active {
+.public-slot:not(.public-slot--booked):not(.public-slot--past):active {
   background: #e5e2fc;
 }
 .public-slot:focus-within {
@@ -620,6 +620,19 @@ button:active, .button-link:active {
 }
 .public-slot--booked .public-slot-time {
   color: var(--text-secondary);
+}
+.public-slot--past {
+  border-style: dashed;
+  border-color: #cdd1e3;
+  background: #fafafd;
+}
+.public-slot--past .public-slot-time {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  text-decoration-color: #8a94ad;
+}
+.public-slot--past .public-slot-status {
+  grid-column: 1 / -1;
 }
 .availability-note {
   display: flex;

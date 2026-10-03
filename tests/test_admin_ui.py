@@ -214,7 +214,7 @@ def test_admin_confirmation_cancel_return_and_new_booking_details(
     assert result.status_code == 303
     assert result.headers["location"] == "/admin?date=2026-10-10&cancelled=1"
     admin = client.get(result.headers["location"])
-    assert "Запись отменена. Время снова доступно для бронирования." in admin.text
+    assert "Запись отменена. Проверьте доступное время в расписании." in admin.text
     assert "Анна Иванова" not in admin.text and "+7 999 123-45-67" not in admin.text
     assert admin.context["summary"] == {"total": 1, "free": 1, "booked": 0}
     with session_factory() as session:

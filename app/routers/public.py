@@ -16,13 +16,17 @@ from app.services.bookings import (
     BookingCancellationError,
     BookingConflictError,
     BookingNotFoundError,
+    SlotInPastError,
     SlotNotAvailableError,
     SlotNotFoundError,
     cancel_booking,
     create_booking,
     get_booking_by_id,
+    slot_booking_state,
 )
 from app.services.slots import get_slot_by_id, get_slots_by_date
+from app.static_assets import stylesheet_version
+from app.timezone import local_today
 
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
@@ -44,6 +48,7 @@ _RU_MONTHS = (
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["booking_calendar"] = booking_calendar
+templates.env.globals["stylesheet_version"] = stylesheet_version
 _CANCEL_SOURCES = {"public", "admin"}
 
 
@@ -109,8 +114,8 @@ async def home(
     date_query: Annotated[str | None, Query(alias="date")] = None,
     cancelled: str | None = None,
 ) -> HTMLResponse:
-    """Show the public schedule for an optionally selected date."""
-    selected_date: datetime.date | None = None
+    """Show today's local schedule unless an explicit date is selected."""
+    selected_date: datetime.date | None = local_today() if not date_query else None
     error_message: str | None = None
 
     if date_query:
@@ -124,6 +129,7 @@ async def home(
         if selected_date is not None
         else []
     )
+    slot_states = {slot.id: slot_booking_state(slot) for slot in slots}
 
     return templates.TemplateResponse(
         request=request,
@@ -135,9 +141,11 @@ async def home(
             ),
             "date_value": date_query or "",
             "slots": slots,
+            "slot_states": slot_states,
+            "available_count": sum(state == "available" for state in slot_states.values()),
             "error_message": error_message,
             "success_message": (
-                "Запись отменена. Время снова доступно для бронирования."
+                "Запись отменена. Проверьте доступное время в расписании."
                 if cancelled == "1" and error_message is None
                 else None
             ),
@@ -165,7 +173,8 @@ async def booking_form(
             status_code=404,
         )
 
-    if slot.status != "free":
+    state = slot_booking_state(slot)
+    if state != "available":
         return templates.TemplateResponse(
             request=request,
             name="booking.html",
@@ -174,6 +183,7 @@ async def booking_form(
                 "formatted_date": format_ru_date(slot.date),
                 "back_url": _schedule_url(slot.date),
                 "occupied": True,
+                "past": state == "past",
                 "client_name": "",
                 "client_contact": "",
                 "name_error": None,
@@ -229,7 +239,8 @@ async def submit_booking(
         )
     except ValidationError as exc:
         name_error, contact_error = _booking_field_errors(exc)
-        occupied = slot.status != "free"
+        state = slot_booking_state(slot)
+        occupied = state != "available"
         return templates.TemplateResponse(
             request=request,
             name="booking.html",
@@ -238,6 +249,7 @@ async def submit_booking(
                 "formatted_date": format_ru_date(slot.date),
                 "back_url": _schedule_url(slot.date),
                 "occupied": occupied,
+                "past": state == "past",
                 "client_name": client_name,
                 "client_contact": client_contact,
                 "name_error": name_error,
@@ -259,7 +271,7 @@ async def submit_booking(
             },
             status_code=404,
         )
-    except (SlotNotAvailableError, BookingConflictError):
+    except (SlotNotAvailableError, BookingConflictError) as error:
         current_slot = get_slot_by_id(session, slot_id)
         return templates.TemplateResponse(
             request=request,
@@ -269,6 +281,7 @@ async def submit_booking(
                 "formatted_date": format_ru_date(slot.date),
                 "back_url": _schedule_url(slot.date),
                 "occupied": True,
+                "past": isinstance(error, SlotInPastError),
                 "client_name": booking_data.client_name,
                 "client_contact": booking_data.client_contact,
                 "name_error": None,

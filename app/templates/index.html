@@ -98,19 +98,19 @@
         {% if selected_date and slots %}
           <ul class="public-slot-grid">
             {% for slot in slots %}
-              <li class="public-slot{% if slot.status != 'free' %} public-slot--booked{% endif %}">
+              {% set state = slot_states[slot.id] %}
+              <li class="public-slot{% if state != 'available' %} public-slot--{{ state }}{% endif %}"{% if state != 'available' %} aria-disabled="true"{% endif %}>
                 <time class="public-slot-time" datetime="{{ slot.time.strftime('%H:%M') }}">{{ slot.time.strftime('%H:%M') }}</time>
-                <span class="public-slot-status{% if slot.status == 'free' %} public-slot-status--free{% endif %}">{{ 'Свободно' if slot.status == 'free' else 'Занято' }}</span>
-                {% if slot.status == 'free' %}
+                <span class="public-slot-status{% if state == 'available' %} public-slot-status--free{% endif %}">{{ 'Свободно' if state == 'available' else 'Время прошло' if state == 'past' else 'Занято' }}</span>
+                {% if state == 'available' %}
                   <a class="slot-action" href="/booking/{{ slot.id }}" aria-label="Записаться на {{ slot.time.strftime('%H:%M') }}"><span class="visually-hidden">Записаться</span><span aria-hidden="true">↗</span></a>
                 {% else %}
-                  <span class="slot-unavailable visually-hidden">Недоступно для записи</span>
+                  <span class="slot-unavailable visually-hidden">{{ 'Недоступно: время прошло' if state == 'past' else 'Недоступно для записи' }}</span>
                 {% endif %}
               </li>
             {% endfor %}
           </ul>
-          {% set free_count = slots | selectattr('status', 'equalto', 'free') | list | length %}
-          <p class="availability-note"><span class="status-dot" aria-hidden="true"></span><strong>{{ free_count }}</strong> доступно для записи <span class="availability-note-detail">из {{ slots | length }}</span></p>
+          <p class="availability-note"><span class="status-dot" aria-hidden="true"></span><strong>{{ available_count }}</strong> доступно для записи <span class="availability-note-detail">из {{ slots | length }}</span></p>
         {% else %}
           <div class="public-empty-state">
             {{ state_icon('neutral') }}

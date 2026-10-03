@@ -1,3 +1,5 @@
+from typing import Literal
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
@@ -5,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database.models import Booking, Slot
 from app.schemas.booking import BookingCreate
 from app.services.slots import get_slot_by_id
+from app.timezone import is_past_slot
 
 
 class SlotNotFoundError(Exception):
@@ -13,6 +16,10 @@ class SlotNotFoundError(Exception):
 
 class SlotNotAvailableError(Exception):
     """Raised when the slot is no longer free."""
+
+
+class SlotInPastError(SlotNotAvailableError):
+    """Raised when the slot's start time has already been reached."""
 
 
 class BookingConflictError(Exception):
@@ -27,6 +34,15 @@ class BookingCancellationError(Exception):
     """Raised when cancellation could not be committed."""
 
 
+def slot_booking_state(slot: Slot) -> Literal["available", "booked", "past"]:
+    """Share booking eligibility with the public UI, without changing DB status."""
+    if slot.status != "free":
+        return "booked"
+    if is_past_slot(slot.date, slot.time, inclusive=True):
+        return "past"
+    return "available"
+
+
 def create_booking(
     session: Session,
     slot_id: int,
@@ -36,8 +52,11 @@ def create_booking(
     slot = get_slot_by_id(session, slot_id)
     if slot is None:
         raise SlotNotFoundError
-    if slot.status != "free":
+    state = slot_booking_state(slot)
+    if state == "booked":
         raise SlotNotAvailableError
+    if state == "past":
+        raise SlotInPastError
 
     booking = Booking(
         slot_id=slot.id,
