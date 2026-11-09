@@ -108,7 +108,7 @@ def _booking_field_errors(
 
 
 @router.get("/", response_class=HTMLResponse)
-async def home(
+def home(
     request: Request,
     session: Annotated[Session, Depends(get_db)],
     date_query: Annotated[str | None, Query(alias="date")] = None,
@@ -154,7 +154,7 @@ async def home(
 
 
 @router.get("/booking/{slot_id}", response_class=HTMLResponse)
-async def booking_form(
+def booking_form(
     request: Request,
     slot_id: int,
     session: Annotated[Session, Depends(get_db)],
@@ -209,7 +209,7 @@ async def booking_form(
 
 
 @router.post("/booking/{slot_id}", response_class=HTMLResponse)
-async def submit_booking(
+def submit_booking(
     request: Request,
     slot_id: int,
     session: Annotated[Session, Depends(get_db)],
@@ -297,7 +297,7 @@ async def submit_booking(
 
 
 @router.get("/booking/{booking_id}/success", response_class=HTMLResponse)
-async def booking_success(
+def booking_success(
     request: Request,
     booking_id: int,
     session: Annotated[Session, Depends(get_db)],
@@ -330,7 +330,7 @@ async def booking_success(
 
 
 @router.get("/booking/{booking_id}/cancel", response_class=HTMLResponse)
-async def cancel_booking_confirmation(
+def cancel_booking_confirmation(
     request: Request,
     booking_id: int,
     session: Annotated[Session, Depends(get_db)],
@@ -371,7 +371,7 @@ async def cancel_booking_confirmation(
 
 
 @router.post("/booking/{booking_id}/cancel", response_class=HTMLResponse)
-async def submit_cancel_booking(
+def submit_cancel_booking(
     request: Request,
     booking_id: int,
     session: Annotated[Session, Depends(get_db)],

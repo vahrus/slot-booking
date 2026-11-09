@@ -1,0 +1,5 @@
+-r requirements.txt
+
+# Test-only. The Docker image installs requirements.txt and does not include these.
+pytest==9.1.1
+httpx==0.28.1

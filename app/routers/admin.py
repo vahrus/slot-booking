@@ -77,7 +77,7 @@ def _admin_context(
 
 
 @router.get("", response_class=HTMLResponse)
-async def admin_page(
+def admin_page(
     request: Request,
     session: Annotated[Session, Depends(get_db)],
     date_query: Annotated[str | None, Query(alias="date")] = None,
@@ -125,7 +125,7 @@ async def admin_page(
 
 
 @router.post("/slots", response_class=HTMLResponse)
-async def add_slot(
+def add_slot(
     request: Request,
     session: Annotated[Session, Depends(get_db)],
     date_value: Annotated[str, Form(alias="date")] = "",

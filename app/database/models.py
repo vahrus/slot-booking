@@ -13,8 +13,11 @@ class Slot(Base):
     """A date and time that can receive at most one booking."""
 
     __tablename__ = "slots"
+    # AUTOINCREMENT is applied only when this table is created. create_all()
+    # does not rebuild an existing table, including data/booking.db.
     __table_args__ = (
         UniqueConstraint("date", "time", name="uq_slots_date_time"),
+        {"sqlite_autoincrement": True},
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -37,8 +40,11 @@ class Booking(Base):
     """Client details associated with exactly one slot."""
 
     __tablename__ = "bookings"
+    # AUTOINCREMENT is applied only when this table is created. create_all()
+    # does not rebuild an existing table, including data/booking.db.
     __table_args__ = (
         UniqueConstraint("slot_id", name="uq_bookings_slot_id"),
+        {"sqlite_autoincrement": True},
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

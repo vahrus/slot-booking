@@ -1,9 +1,10 @@
 import datetime
 
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
+from app.database.database import immediate_write, is_sqlite_lock_error
 from app.database.models import Slot
 from app.schemas.slot import SlotCreate
 
@@ -14,18 +15,21 @@ class SlotAlreadyExistsError(Exception):
 
 def create_slot(session: Session, slot_data: SlotCreate) -> Slot:
     """Create and persist a free slot."""
-    slot = Slot(
-        date=slot_data.date,
-        time=slot_data.time,
-        status="free",
-    )
-    session.add(slot)
-
     try:
-        session.commit()
+        with immediate_write(session):
+            slot = Slot(
+                date=slot_data.date,
+                time=slot_data.time,
+                status="free",
+            )
+            session.add(slot)
+            session.commit()
     except IntegrityError as error:
-        session.rollback()
         raise SlotAlreadyExistsError from error
+    except OperationalError as error:
+        if is_sqlite_lock_error(error):
+            raise SlotAlreadyExistsError from error
+        raise
 
     session.refresh(slot)
     return slot

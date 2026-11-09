@@ -83,30 +83,32 @@ Slot снова становится free
 - waitlist;
 - PostgreSQL;
 - Redis;
-- Docker;
 - production-grade distributed concurrency controls.
+
+Учебный Docker-образ описан ниже. Это один контейнер и один процесс Uvicorn,
+а не распределённый запуск.
 
 `/admin` является demo-интерфейсом без защиты авторизацией.
 
 ## Technology Stack
 
-Фактически используемый стек:
+Фактически используемый стек, версии зафиксированы по окружению,
+в котором 9 ноября 2026 прошли 169 тестов (Python 3.11.9):
 
-- Python 3.11+;
-- FastAPI;
-- Uvicorn;
-- Jinja2;
-- SQLAlchemy 2.x;
+- FastAPI 0.142.2;
+- Uvicorn 0.54.0 с extra `standard`;
+- Jinja2 3.1.6;
+- SQLAlchemy 2.1.1;
 - SQLite;
-- Pydantic 2.x;
+- Pydantic 2.13.5;
+- python-multipart 0.0.32;
 - HTML5;
-- CSS3;
-- pytest.
+- CSS3.
 
-Supporting dependencies из `requirements.txt`:
+Тестовые зависимости вынесены в `requirements-dev.txt` и не ставятся в образ:
 
-- `python-multipart` — обработка HTML form data;
-- `httpx` — тестовый HTTP-клиент через FastAPI/TestClient stack.
+- pytest 9.1.1;
+- httpx 0.28.1 — клиент FastAPI TestClient.
 
 ## Architecture
 
@@ -228,17 +230,23 @@ tests/
   test_slots.py
 .env.example
 .gitignore
+Dockerfile
+.dockerignore
+docker/entrypoint.py
 README.md
 requirements.txt
+requirements-dev.txt
 ```
 
 Не включены служебные директории `.venv`, `__pycache__`, `.pytest_cache`.
 
 ## Application Startup
 
-`app/main.py` создаёт `FastAPI(title="Slotly")`, монтирует static files из
-`app/static`, подключает public/admin routers и на lifespan startup вызывает
-`init_db()`.
+`app/main.py` создаёт `FastAPI(title="Slotly")` с пояснением, что маршруты
+возвращают HTML. Он монтирует static files из `app/static`, подключает
+public/admin routers и на lifespan startup проверяет `APP_TIMEZONE`, затем
+вызывает `init_db()` в пуле потоков. Обработчики с SQLAlchemy объявлены как
+обычные функции, чтобы синхронный доступ к базе не блокировал цикл событий.
 
 `GET /health` возвращает:
 
@@ -262,9 +270,18 @@ data/booking.db
 - для первого запуска не нужны ручные миграции или `.env`;
 - `create_all()` создаёт отсутствующие таблицы, но не мигрирует существующую схему;
 - `SessionLocal` использует `autoflush=False` и `expire_on_commit=False`;
-- SQLite engine создаётся с `check_same_thread=False`;
-- foreign key enforcement включается на каждое подключение через
-  `PRAGMA foreign_keys=ON`;
+- SQLite engine создаётся с `check_same_thread=False` и `timeout=5`;
+- на каждом подключении включаются `PRAGMA foreign_keys=ON`,
+  `PRAGMA journal_mode=WAL` и `PRAGMA busy_timeout=5000`;
+- драйверный автостарт транзакции отключён, SQLAlchemy сам выполняет `BEGIN`;
+- чтение идёт в обычном `BEGIN`, запись слота, бронирование и отмена — в
+  `BEGIN IMMEDIATE`;
+- `journal_mode=WAL` записывается в заголовок файла при первом подключении и
+  не переписывает строки. Рядом с базой могут появиться `-wal` и `-shm`;
+- `create_all()` для новых файлов создаёт `slots` и `bookings` с
+  `INTEGER PRIMARY KEY AUTOINCREMENT`;
+- существующая `data/booking.db` этим не перестраивается и сохраняет прежние
+  идентификаторы. Автоматической миграции нет;
 - tests используют отдельные SQLite databases в `tmp_path` и не используют
   `data/booking.db`.
 
@@ -276,7 +293,7 @@ Table: `slots`
 
 | Field | Type | Constraints |
 | --- | --- | --- |
-| `id` | Integer | primary key, autoincrement |
+| `id` | Integer | primary key; `AUTOINCREMENT` в новых базах |
 | `date` | Date | not null |
 | `time` | Time | not null |
 | `status` | String(20) | not null, Python default `free`, server default `free` |
@@ -330,7 +347,7 @@ Table: `bookings`
 
 | Field | Type | Constraints |
 | --- | --- | --- |
-| `id` | Integer | primary key, autoincrement |
+| `id` | Integer | primary key; `AUTOINCREMENT` в новых базах |
 | `slot_id` | Integer | not null, foreign key to `slots.id` |
 | `client_name` | String(200) | not null |
 | `client_contact` | String(200) | not null |
@@ -405,8 +422,10 @@ Fields:
 - `date: datetime.date`;
 - `time: datetime.time`.
 
-Pydantic выполняет parsing/validation даты и времени. Ошибка формы создания
-слота возвращается в admin UI со статусом `400`.
+Pydantic выполняет parsing даты и времени. Секунды и микросекунды нового слота
+сбрасываются в ноль, поэтому `10:00:30` и `10:00` — одна минута. Уже сохранённые
+строки эта проверка не обновляет. Ошибка формы создания слота возвращается в
+admin UI со статусом `400`.
 
 ### BookingCreate
 
@@ -496,9 +515,12 @@ refresh Booking
 Если `Slot` отсутствует, service поднимает `SlotNotFoundError`.
 
 Если `Slot.status != "free"`, service поднимает `SlotNotAvailableError`.
+Прошедший слот поднимает `SlotInPastError`.
 
-Если database constraint ловит conflict, service выполняет `rollback` и
-поднимает `BookingConflictError`.
+Проверка и вставка выполняются после `BEGIN IMMEDIATE`. Если database
+constraint ловит conflict или SQLite отвечает `database is locked` /
+`database table is locked`, service выполняет `rollback` и поднимает
+`BookingConflictError`. Другие `OperationalError` не превращаются в конфликт.
 
 ## Double-Booking Protection
 
@@ -506,13 +528,11 @@ Double booking предотвращается двумя слоями.
 
 ### Application Level
 
-`create_booking()` проверяет:
+`create_booking()` открывает `BEGIN IMMEDIATE` и заново читает слот. Запись
+возможна, когда статус `free` и начало слота ещё не наступило по `APP_TIMEZONE`.
 
-```text
-Slot.status == "free"
-```
-
-Если слот уже занят, пользователь получает controlled conflict response.
+Если слот уже занят или его время прошло, пользователь получает controlled
+conflict response.
 
 ### Database Level
 
@@ -525,7 +545,7 @@ UNIQUE(bookings.slot_id)
 Conflict handling:
 
 ```text
-IntegrityError
+IntegrityError или блокировка SQLite
     ↓
 rollback
     ↓
@@ -534,9 +554,10 @@ BookingConflictError
 409 controlled HTTP/UI response
 ```
 
-SQLite не используется как distributed locking/concurrency architecture. Для
-учебного MVP текущая защита состоит из application-level availability check,
-database unique constraint и controlled rollback/error handling.
+Ожидание блокировки ограничено `busy_timeout=5000`. WAL позволяет читать
+расписание, пока идёт одна запись. Это защита одного процесса SQLite, а не
+распределённая блокировка: несколько workers или контейнеров на одном файле
+не используются.
 
 ## Cancellation Flow
 
@@ -790,13 +811,43 @@ validation schemas и transaction semantics сохранены.
 - дата и время слота не содержат timezone; будущая дата не обязательна;
 - нет системы миграций существующей схемы и распределённой инфраструктуры.
 
-## Testing
+## Docker
 
-Проверка v1.0 (2026-10-01), Python 3.11.9:
+Образ `python:3.11-slim` ставит `tzdata`, зависимости из `requirements.txt` и
+задаёт `APP_TIMEZONE=Europe/Moscow`. `docker/entrypoint.py` назначает
+`/app/data` пользователю `slotly` (uid 1000) без `chmod 777` и только затем
+запускает один процесс:
 
 ```text
-85 passed
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+
+`--proxy-headers` и `--forwarded-allow-ips=*` в команду не входят.
+`.dockerignore` не пропускает в контекст `data/`, базы, `.env`, тесты и docs.
+Учебный named volume монтируется в `/app/data`; локальный `data/booking.db`
+в контейнер не подключается. Файл SQLite и его WAL-соседи остаются в этом
+volume при пересоздании контейнера.
+
+9 ноября 2026 образ `slotly:homework` собран, а контейнер `slotly-homework`
+проверен на отдельном volume `slotly-homework-data`: процесс Uvicorn шёл от
+uid 1000, `Europe/Moscow` открылся через `zoneinfo`, `/health` и главная
+страница ответили 200, слот, запись и отмена прошли по HTTP, после нового
+контейнера на том же volume запись осталась. В логах были только строки
+доступа Uvicorn. Рабочая база проекта не монтировалась.
+
+## Testing
+
+Проверка текущего suite 9 ноября 2026, Python 3.11.9:
+
+```text
+169 passed in 2.64s
+```
+
+Предыдущая отметка спецификации о 85 тестах на 1 октября 2026 относится к
+более раннему набору. Текущий набор её включает и добавляет календарь,
+часовой пояс, прошедшие слоты, версию CSS, конкурентное бронирование,
+обработку `database is locked`, нормализацию минут и поведение
+`AUTOINCREMENT` на новых базах.
 
 Категории тестов:
 
@@ -833,10 +884,10 @@ database `data/booking.db` не используется тестами. Сра�
   непосредственно в SQLite на этапах smoke;
 - сравнение исходных строк и схемы SQLite после очистки только demo/smoke данных.
 
-В чистом окружении pytest вывел одно `StarletteDeprecationWarning` об использовании
-HTTPX в TestClient. Все 85 тестов прошли; предупреждение зависимости не изменяет
-результат проверок. Скриншоты показывают вымышленные данные, которые после
-проверки удалены из рабочей базы.
+Прогон 9 ноября 2026 завершился без предупреждений в выводе pytest: 169 passed.
+Скриншоты показывают вымышленные данные. Рабочая `data/booking.db` этим
+прогоном не изменялась: до и после SHA-1 совпал,
+`91a076b63a7f4da89f6e159cd964bbc0180ea6a5`, 10 слотов и 1 запись.
 
 ## Critical Tested Scenarios
 
@@ -848,7 +899,10 @@ HTTPX в TestClient. Все 85 тестов прошли; предупрежде
 - `Booking` creation;
 - nonexistent `Slot`;
 - booked `Slot`;
-- double booking prevention;
+- double booking prevention, including two concurrent bookings;
+- SQLite `database is locked` mapped to HTTP 409 with rollback;
+- new slot times truncated to the minute;
+- new databases do not reuse booking ids; existing files are not migrated;
 - transaction rollback;
 - cancellation;
 - `Slot` survives cancellation;

@@ -20,6 +20,7 @@ venv
 *.log
 *.tmp
 *.bak
+*.backup
 *.swp
 *.swo
 .coverage
@@ -30,9 +31,13 @@ build
 dist
 tmp
 temp
-data/*.db
-data/*.db-*
-data/*.sqlite*
+data
+data/**
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite*
 tests
 docs
 README.md
