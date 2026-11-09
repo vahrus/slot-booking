@@ -822,7 +822,10 @@ validation schemas и transaction semantics сохранены.
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-`--proxy-headers` и `--forwarded-allow-ips=*` в команду не входят.
+Без `FORWARDED_ALLOW_IPS` Uvicorn доверяет `X-Forwarded-Proto` только от
+`127.0.0.1` и `::1`. Значение `*` в образ не подставляется. Если переменная
+задана, `docker/entrypoint.py` добавляет `--proxy-headers` и
+`--forwarded-allow-ips` с этим значением.
 `.dockerignore` не пропускает в контекст `data/`, базы, `.env`, тесты и docs.
 Учебный named volume монтируется в `/app/data`; локальный `data/booking.db`
 в контейнер не подключается. Файл SQLite и его WAL-соседи остаются в этом

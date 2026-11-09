@@ -1,11 +1,14 @@
 """Automatic content versions and the actual public/admin stylesheet URL."""
 
+import importlib.util
 import os
 from hashlib import sha256
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app import static_assets
 from tests.test_bookings import client, session_factory
@@ -48,6 +51,57 @@ def test_version_changes_with_css_bytes_even_if_file_mtime_is_unchanged(
     assert updated == stylesheet_url(client.get("/admin"))
     assert updated == stylesheet_url(client.get("/"))
     assert parse_qs(urlsplit(updated).query)["v"] == [sha256(css.read_bytes()).hexdigest()[:16]]
+
+
+def _entrypoint():
+    path = Path(__file__).resolve().parents[1] / "docker" / "entrypoint.py"
+    spec = importlib.util.spec_from_file_location("slotly_entrypoint", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_forwarded_allow_ips_is_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    entrypoint = _entrypoint()
+    command = ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    monkeypatch.delenv("FORWARDED_ALLOW_IPS", raising=False)
+    assert entrypoint.command_with_trusted_proxy(command) == command
+
+    monkeypatch.setenv("FORWARDED_ALLOW_IPS", "  ")
+    assert entrypoint.command_with_trusted_proxy(command) == command
+
+    monkeypatch.setenv("FORWARDED_ALLOW_IPS", "172.18.0.0/16")
+    assert entrypoint.command_with_trusted_proxy(command) == [
+        *command,
+        "--proxy-headers",
+        "--forwarded-allow-ips",
+        "172.18.0.0/16",
+    ]
+    assert entrypoint.command_with_trusted_proxy(["python", "-m", "pytest"]) == [
+        "python",
+        "-m",
+        "pytest",
+    ]
+
+
+def test_trusted_proxy_https_stylesheet_and_untrusted_header_stays_http(
+    client: TestClient,
+) -> None:
+    def stylesheet_parts(trusted_hosts: str):
+        proxied = ProxyHeadersMiddleware(client.app, trusted_hosts=trusted_hosts)
+        with TestClient(proxied, base_url="http://slotly.avahrus.ru") as http:
+            response = http.get("/", headers={"x-forwarded-proto": "https"})
+        return urlsplit(stylesheet_url(response))
+
+    trusted = stylesheet_parts("testclient")
+    assert trusted.scheme == "https"
+    assert trusted.netloc == "slotly.avahrus.ru"
+    assert trusted.path == "/static/style.css"
+
+    untrusted = stylesheet_parts("127.0.0.1")
+    assert untrusted.scheme == "http"
+    assert untrusted.netloc == "slotly.avahrus.ru"
 
 
 def test_url_for_preserves_https_host_and_proxy_root_path(client: TestClient) -> None:

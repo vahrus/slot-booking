@@ -150,7 +150,8 @@ JSON API бронирований нет.
 
 Образ основан на `python:3.11-slim`, ставит `tzdata` и по умолчанию использует
 `APP_TIMEZONE=Europe/Moscow`. Внутри слушает `0.0.0.0:8000` один процесс Uvicorn.
-Заголовки прокси по умолчанию не принимаются. Секретов и файла `data/booking.db`
+Заголовок `X-Forwarded-Proto` по умолчанию принимается только от `127.0.0.1` и `::1`.
+Секретов и файла `data/booking.db`
 в контексте сборки нет: каталог `data/` исключён `.dockerignore`.
 
 Контейнер кратко стартует от root, чтобы отдать каталог `/app/data` пользователю
@@ -200,6 +201,39 @@ docker rm -f slotly-homework
 ```
 
 Образ в Docker Hub этим проектом не публикуется.
+
+### HTTPS за Traefik в Dokploy
+
+Страницы вызывают `url_for` для CSS. Если Uvicorn видит запрос от Traefik как обычный
+HTTP, в HTML попадает `http://.../static/style.css`, и браузер блокирует его на
+HTTPS-сайте.
+
+Локальный `docker run` эту переменную не задаёт: ссылки остаются `http://`, и это
+правильно для локального HTTP. В Dokploy откройте приложение → Environment и
+добавьте адрес самого Traefik или подсеть Docker-сети, в которой он подключается
+к контейнеру. Не ставьте `*` по умолчанию: тогда схему сможет подменить любой,
+кто достучался до порта приложения.
+
+```text
+FORWARDED_ALLOW_IPS=172.18.0.0/16
+```
+
+Адрес или сеть можно посмотреть на сервере, не меняя DNS и сертификат:
+
+```bash
+docker ps --format '{{.Names}}' | grep traefik
+docker inspect -f '{{range $name, $net := .NetworkSettings.Networks}}{{$name}} {{$net.IPAddress}}{{"\n"}}{{end}}' traefik
+```
+
+Подставьте IP Traefik или CIDR его сети, например `172.18.0.0/16`. Затем
+пересоберите и перезапустите приложение в Dokploy. Проверка:
+
+```bash
+curl -fsS https://slotly.avahrus.ru/ | grep -o 'https://[^"]*style.css[^"]*'
+```
+
+В ответе должна быть ссылка со схемой `https`. Если переменная не задана,
+ссылка останется `http://` и стили на HTTPS-странице не загрузятся.
 
 9 ноября 2026 образ `slotly:homework` был собран из этого проекта. Контейнер
 `slotly-homework` на volume `slotly-homework-data` ответил на `/health` и `/`,

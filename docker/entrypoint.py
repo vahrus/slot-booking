@@ -14,6 +14,21 @@ DATA_DIR = "/app/data"
 APP_USER = "slotly"
 
 
+def command_with_trusted_proxy(argv: list[str]) -> list[str]:
+    """Trust X-Forwarded-Proto only for proxies named by FORWARDED_ALLOW_IPS.
+
+    An empty or missing variable leaves Uvicorn's default, 127.0.0.1 and ::1.
+    The value ``*`` is not added here.
+    """
+    allowed = os.environ.get("FORWARDED_ALLOW_IPS", "").strip()
+    if not allowed or "--forwarded-allow-ips" in argv:
+        return argv
+    names = [os.path.basename(part) for part in argv[:3]]
+    if "uvicorn" not in names:
+        return argv
+    return [*argv, "--proxy-headers", "--forwarded-allow-ips", allowed]
+
+
 def _give_data_directory(account: pwd.struct_passwd) -> None:
     os.makedirs(DATA_DIR, mode=0o755, exist_ok=True)
     for current, dir_names, file_names in os.walk(DATA_DIR):
@@ -36,8 +51,9 @@ def drop_privileges() -> None:
 def main() -> None:
     if len(sys.argv) < 2:
         raise SystemExit("Usage: entrypoint.py <command> [args...]")
+    command = command_with_trusted_proxy(sys.argv[1:])
     drop_privileges()
-    os.execvp(sys.argv[1], sys.argv[1:])
+    os.execvp(command[0], command)
 
 
 if __name__ == "__main__":

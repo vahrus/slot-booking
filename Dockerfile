@@ -28,5 +28,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()"]
 
 # Root is used only by entrypoint.py to chown /app/data. The server then setuid's to slotly.
+# FORWARDED_ALLOW_IPS is optional. When it is unset, proxy headers are trusted
+# only from 127.0.0.1 and ::1.
 ENTRYPOINT ["python", "/entrypoint.py"]
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
